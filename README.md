@@ -105,27 +105,6 @@ The numbers the app uses to make decisions are at the top of `index.html`, in th
 - **Reps aren't counting**: turn on Debug and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 60%.
 - **Skeleton jumps around or disappears**: add more light, and make sure both hands and shoulders are on screen.
 
-## Bench Press Coach
-
-A second page for the bench press: **https://dangledongler.github.io/Pushup-Progression/bench.html** (there's also a link on the push-up app's start screen).
-
-**Setup:**
-1. Stand your phone upright on the floor at the foot of the bench, facing the bench, so the whole bar is in the picture.
-2. Tap **Start camera**, then **tap the end of the bar** on the screen (the collar, the end of the bar, or a weight plate's edge). A green box shows the spot being followed.
-3. Type the weight on the bar at the bottom (kg or lb), lie down and start. The phone must stay still.
-
-**How it works:** instead of tracking your body, it follows the bar. The body tracker can't see your arms well from the foot of the bench, because your legs are in front, but the bar is easy to follow.
-- A rep counts when the bar comes down and goes back up at least **80% as far as your longest rep in that set**.
-- A rep that stops short at the bottom is **"too shallow"**. One that doesn't go all the way back up is **"no lockout"**. Neither counts.
-- The set finishes when you tap **Finish set**, or when the bar stays still for 8 seconds (for example, back in the rack).
-- After each set it tells you how much slower your last rep was than your first. 30% or more slower means you were close to your limit.
-- **Progression:** do 3 sets of 8 good reps at the same weight in one workout, and it suggests adding 2.5 kg (or 5 lb) next time. It fills that weight in for you at your next workout.
-
-**Honest limits:**
-- It checks that each rep is as deep as your other reps, **not** that the bar actually touched your chest. Make your first rep a full one, because it sets the standard for the rest of the set.
-- It can't judge elbow position or arch, only how the bar moves.
-- If the bar or plates change a lot (for example, you change weights), tap **Tap bar again**.
-
 ## Planned for later
 
 - Locking other apps until you finish your push-ups (needs a real phone app; a website can't lock apps)
