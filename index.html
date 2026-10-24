@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Push-up Coach</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: rgba(15, 17, 21, 0.85);
+    --text: #f2f4f7;
+    --muted: #9aa3b2;
+    --line: #2a2f3a;
+    --button: #1f2430;
+    --good: #4ade80;
+    --warn: #facc15;
+    --bad: #f87171;
+    --left: #38bdf8;   /* dots on the person's LEFT side */
+    --right: #fb923c;  /* dots on the person's RIGHT side */
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; padding-top: max(6px, env(safe-area-inset-top));
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 17px; margin: 0; flex: 1; white-space: nowrap; }
+
+  button {
+    font: inherit; font-size: 15px; color: var(--text);
+    background: var(--button); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 14px; min-height: 40px; cursor: pointer;
+  }
+  button.on { border-color: var(--good); color: var(--good); }
+  button.primary {
+    background: var(--good); color: #0b1a10; border: none;
+    font-weight: 700; font-size: 18px; padding: 14px 28px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  #stage { position: relative; flex: 1; min-height: 0; background: #000; }
+  #view { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  /* The camera feed itself is kept invisible; we draw it onto the canvas instead. */
+  #video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  #start {
+    position: absolute; inset: 0; overflow: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 16px; text-align: center; background: var(--bg);
+  }
+  #start h2 { margin: 0; font-size: 24px; }
+  #start p { margin: 0; max-width: 34em; color: var(--muted); line-height: 1.45; }
+  #status { min-height: 1.45em; color: var(--text) !important; }
+  #status.bad { color: var(--bad) !important; }
+
+  #hint {
+    position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+    padding: 8px 16px; border-radius: 999px; background: var(--panel);
+    font-size: 15px; text-align: center; pointer-events: none;
+  }
+  #hint.good { color: var(--good); }
+  #hint.warn { color: var(--warn); }
+  #hint.bad { color: var(--bad); }
+
+  #debug {
+    position: absolute; top: 8px; left: 8px;
+    width: min(300px, calc(100% - 16px)); max-height: calc(100% - 70px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px 10px; font-size: 13px;
+  }
+  #debug table { width: 100%; border-collapse: collapse; }
+  #debug td { padding: 2px 0; vertical-align: top; }
+  #debug td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 8px; }
+  #debug #copyBtn { width: 100%; margin-top: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; }
+  #debug details { margin-top: 6px; color: var(--muted); line-height: 1.4; }
+  #debug details p { margin: 4px 0; }
+  .dotL { color: var(--left); } .dotR { color: var(--right); }
+
+  /* Phone turned sideways: make the top bar and debug panel smaller */
+  @media (max-height: 500px) {
+    header { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+    header h1 { font-size: 15px; }
+    header button { min-height: 32px; padding: 4px 12px; font-size: 14px; }
+    #debug { width: 220px; font-size: 11px; padding: 6px 8px; }
+    #debug td { padding: 0; }
+    #hint { font-size: 13px; padding: 6px 12px; }
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Push-up Coach</h1>
+  <button id="flipBtn" hidden>Flip camera</button>
+  <button id="debugBtn">Debug</button>
+</header>
+
+<main id="stage">
+  <canvas id="view"></canvas>
+  <div id="hint" hidden></div>
+
+  <div id="debug" hidden>
+    <table><tbody id="debugRows"></tbody></table>
+    <button id="copyBtn">Copy numbers</button>
+    <details>
+      <summary>What do these numbers mean?</summary>
+      <p><b>Elbow</b>: 180° = arm straight, 90° = bent at a right angle.</p>
+      <p><b>Hand gap</b>: distance between your wrists compared with your shoulders. 1.0× = hands exactly shoulder-width apart, 2.0× = twice as wide.</p>
+      <p><b>Hip line</b>: 0 = body straight as a plank. Plus numbers = hips sagging down. Minus numbers = hips pushed up high.</p>
+      <p><b>Body tilt</b>: 0° = flat. Plus = head higher than feet (incline). Minus = feet higher than head (decline).</p>
+      <p><b>Camera view</b>: small number = camera sees your side, big number = camera faces your head. "Slant" is what we want.</p>
+      <p><span class="dotL">Blue dots</span> = your left side, <span class="dotR">orange dots</span> = your right side.</p>
+    </details>
+  </div>
+
+  <div id="start">
+    <h2>Push-up Coach</h2>
+    <p>Stand your phone up on the floor about 2 metres (6–7 ft) away, turned sideways, at a slant: halfway between facing your head and facing your side. Your whole body, head to feet, needs to be in the picture.</p>
+    <button id="startBtn" class="primary">Start camera</button>
+    <p id="status">Loading body tracker…</p>
+    <p style="font-size:13px">Your video stays on this device. Nothing is uploaded.</p>
+  </div>
+</main>
+
+<video id="video" playsinline muted></video>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/vision_bundle.mjs";
+
+// ================================================================
+// 1. SETTINGS YOU CAN TUNE
+// ================================================================
+const SETTINGS = {
+  model: "full",          // "lite" = faster on old phones, "full" = more accurate
+  minVisibility: 0.5,     // how sure the tracker must be that it can see a body part (0 to 1)
+  sideViewBelow: 0.3,     // "Camera view" number below this = camera is looking at your side
+  frontViewAbove: 1.3,    // "Camera view" number above this = camera is looking at your head
+  pushupTiltMin: -35,     // body tilt (degrees) range that counts as "in push-up position"
+  pushupTiltMax: 60,
+  smoothing: 0.35,        // 0 to 1. Lower = steadier numbers but slower to react
+};
+
+const MEDIAPIPE_FILES = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+const MODEL_FILE = `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_${SETTINGS.model}/float16/1/pose_landmarker_${SETTINGS.model}.task`;
+
+// The tracker finds 33 points on the body. These are the ones we use.
+const BODY = {
+  lShoulder: 11, rShoulder: 12, lElbow: 13, rElbow: 14, lWrist: 15, rWrist: 16,
+  lHip: 23, rHip: 24, lKnee: 25, rKnee: 26, lAnkle: 27, rAnkle: 28,
+};
+
+// ================================================================
+// 2. SMALL MATH HELPERS (points have x, y, z)
+// ================================================================
+const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z });
+const scale = (a, k) => ({ x: a.x * k, y: a.y * k, z: a.z * k });
+const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+const length = (a) => Math.sqrt(dot(a, a));
+const dist = (a, b) => length(sub(a, b));
+const mid = (a, b) => scale(add(a, b), 0.5);
+const toDegrees = (radians) => radians * 180 / Math.PI;
+
+// Angle at joint b, between a-b and c-b. 180 = straight line.
+function jointAngle(a, b, c) {
+  const u = sub(a, b), v = sub(c, b);
+  const cos = dot(u, v) / (length(u) * length(v) || 1);
+  return toDegrees(Math.acos(Math.min(1, Math.max(-1, cos))));
+}
+
+// How far the hips are off the straight line from shoulders to feet,
+// as a fraction of that line's length. Plus = sagging, minus = piked up.
+// Works the same for screen points and 3D points because "down" is +y in both.
+function hipOffset(shoulders, hips, feet) {
+  const line = sub(feet, shoulders);
+  const bodyLength = length(line);
+  if (bodyLength < 1e-6) return 0;
+  const along = scale(line, 1 / bodyLength);
+  const closestOnLine = add(shoulders, scale(along, dot(sub(hips, shoulders), along)));
+  const offLine = sub(hips, closestOnLine);
+  const down = { x: 0, y: 1, z: 0 };
+  const downAcrossBody = sub(down, scale(along, dot(down, along)));
+  const n = length(downAcrossBody);
+  if (n < 1e-6) return 0;
+  return dot(offLine, scale(downAcrossBody, 1 / n)) / bodyLength;
+}
+
+// Angle of the shoulders-to-feet line against flat ground. Plus = head higher than feet.
+function bodyTilt(shoulders, feet) {
+  const v = sub(shoulders, feet);
+  return toDegrees(Math.atan2(-v.y, Math.hypot(v.x, v.z)));
+}
+
+// ================================================================
+// 3. MEASURING THE BODY (runs on every camera frame)
+// ================================================================
+function measure(points, points3d, width, height) {
+  // Some browsers don't report how sure the tracker is; then trust every point.
+  const hasVisibility = points.some((p) => p.visibility > 0);
+  const seen = (i) => !hasVisibility || points[i].visibility >= SETTINGS.minVisibility;
+  const flat = (i) => ({ x: points[i].x * width, y: points[i].y * height, z: 0 }); // on screen, in pixels
+  const real = (i) => points3d[i];                                                 // estimated 3D, in metres
+
+  const feetSeen = seen(BODY.lAnkle) || seen(BODY.rAnkle);
+  const kneesSeen = seen(BODY.lKnee) || seen(BODY.rKnee);
+  const [footL, footR] = feetSeen ? [BODY.lAnkle, BODY.rAnkle] : [BODY.lKnee, BODY.rKnee];
+
+  const shoulders3d = mid(real(BODY.lShoulder), real(BODY.rShoulder));
+  const hips3d = mid(real(BODY.lHip), real(BODY.rHip));
+  const feet3d = mid(real(footL), real(footR));
+  const shoulders2d = mid(flat(BODY.lShoulder), flat(BODY.rShoulder));
+  const hips2d = mid(flat(BODY.lHip), flat(BODY.rHip));
+  const feet2d = mid(flat(footL), flat(footR));
+
+  const shoulderGap2d = dist(flat(BODY.lShoulder), flat(BODY.rShoulder));
+  const torso2d = dist(shoulders2d, hips2d);
+  const viewRatio = shoulderGap2d / (torso2d || 1);
+
+  const keyPoints = Object.values(BODY);
+  const quality = keyPoints.reduce((sum, i) => sum + (points[i].visibility ?? 0), 0) / keyPoints.length;
+
+  return {
+    elbowL: jointAngle(real(BODY.lShoulder), real(BODY.lElbow), real(BODY.lWrist)),
+    elbowR: jointAngle(real(BODY.rShoulder), real(BODY.rElbow), real(BODY.rWrist)),
+    handGap: dist(flat(BODY.lWrist), flat(BODY.rWrist)) / (shoulderGap2d || 1),
+    handGap3d: dist(real(BODY.lWrist), real(BODY.rWrist)) / (dist(real(BODY.lShoulder), real(BODY.rShoulder)) || 1),
+    hipLine: hipOffset(shoulders3d, hips3d, feet3d),
+    hipLine2d: hipOffset(shoulders2d, hips2d, feet2d),
+    tilt: bodyTilt(shoulders3d, feet3d),
+    viewRatio,
+    view: viewRatio < SETTINGS.sideViewBelow ? "side" : viewRatio > SETTINGS.frontViewAbove ? "front" : "slant",
+    quality: hasVisibility ? quality : null,
+    feetSeen, kneesSeen,
+    hipsSeen: seen(BODY.lHip) || seen(BODY.rHip),
+    armsSeen: (seen(BODY.lElbow) && seen(BODY.lWrist)) || (seen(BODY.rElbow) && seen(BODY.rWrist)),
+    bothHandsSeen: seen(BODY.lWrist) && seen(BODY.rWrist),
+  };
+}
+
+// Numbers jump around a little from frame to frame; this steadies them.
+const NUMBER_KEYS = ["elbowL", "elbowR", "handGap", "handGap3d", "hipLine", "hipLine2d", "tilt", "viewRatio"];
+let steady = null;
+function smoothMeasurements(m) {
+  if (!steady) { steady = { ...m }; return steady; }
+  const next = { ...m };
+  for (const k of NUMBER_KEYS) next[k] = steady[k] + SETTINGS.smoothing * (m[k] - steady[k]);
+  next.view = next.viewRatio < SETTINGS.sideViewBelow ? "side" : next.viewRatio > SETTINGS.frontViewAbove ? "front" : "slant";
+  steady = next;
+  return steady;
+}
+
+// ================================================================
+// 4. SCREEN ELEMENTS AND SAVED PREFERENCES
+// ================================================================
+const $ = (id) => document.getElementById(id);
+const video = $("video"), canvas = $("view"), ctx = canvas.getContext("2d");
+const hintEl = $("hint"), statusEl = $("status"), debugEl = $("debug");
+
+function loadPref(key, fallback) {
+  try { const v = localStorage.getItem("pushup." + key); return v === null ? fallback : JSON.parse(v); }
+  catch { return fallback; }
+}
+function savePref(key, value) {
+  try { localStorage.setItem("pushup." + key, JSON.stringify(value)); } catch { /* private mode: just don't remember */ }
+}
+
+let debugOn = loadPref("debug", true);
+function showDebug(on) {
+  debugOn = on;
+  savePref("debug", on);
+  $("debugBtn").classList.toggle("on", on);
+  debugEl.hidden = !on || !stream;
+}
+$("debugBtn").onclick = () => showDebug(!debugOn);
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("bad", isError);
+}
+
+let lastHint = "";
+function setHint(text, kind) {
+  const key = kind + text;
+  if (key === lastHint) return;
+  lastHint = key;
+  hintEl.textContent = text;
+  hintEl.className = kind;
+  hintEl.hidden = !text;
+}
+
+// ================================================================
+// 5. LOADING THE BODY TRACKER (MediaPipe Pose Landmarker)
+// ================================================================
+let tracker = null;
+let trackerKind = "";
+let trackerError = "";
+
+async function loadTracker(useGpu) {
+  const files = await FilesetResolver.forVisionTasks(MEDIAPIPE_FILES);
+  const options = {
+    runningMode: "VIDEO",
+    numPoses: 1,
+    minPoseDetectionConfidence: 0.5,
+    minPosePresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+  };
+  const make = (delegate) => PoseLandmarker.createFromOptions(files, {
+    ...options, baseOptions: { modelAssetPath: MODEL_FILE, delegate },
+  });
+  if (useGpu) {
+    try {
+      tracker = await make("GPU");
+      trackerKind = "GPU";
+      return;
+    } catch (err) {
+      console.warn("Graphics-chip tracking failed, using the regular processor instead.", err);
+    }
+  }
+  tracker = await make("CPU");
+  trackerKind = "CPU";
+}
+
+const trackerReady = loadTracker(true).then(
+  () => { if (!stream) setStatus("Ready. Tap Start camera."); },
+  (err) => {
+    console.error(err);
+    trackerError = "Couldn't load the body tracker. Check your internet connection and reload the page.";
+    setStatus(trackerError, true);
+  },
+);
+
+// ================================================================
+// 6. CAMERA
+// ================================================================
+let stream = null;
+let facing = "user";   // "user" = selfie camera, "environment" = back camera
+let mirrored = true;
+
+async function startCamera() {
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    setStatus("The camera only works when this page is opened from its https:// web address.", true);
+    return;
+  }
+  $("startBtn").disabled = true;
+  setStatus("Starting camera…");
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+    });
+  } catch (err) {
+    stream = null;
+    $("startBtn").disabled = false;
+    const reasons = {
+      NotAllowedError: "Camera permission was blocked. Allow the camera for this website in your browser settings, then reload the page.",
+      NotFoundError: "No camera was found on this device.",
+      NotReadableError: "Another app is using the camera. Close it and try again.",
+    };
+    setStatus(reasons[err.name] || `Couldn't start the camera (${err.name || err.message}).`, true);
+    return;
+  }
+  video.srcObject = stream;
+  await video.play();
+  const reportedFacing = stream.getVideoTracks()[0].getSettings().facingMode;
+  mirrored = (reportedFacing || facing) !== "environment";
+
+  $("start").hidden = true;
+  showDebug(debugOn);
+  keepScreenOn();
+  if (!tracker) setHint("Loading body tracker…", "warn");
+
+  const cameras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+  $("flipBtn").hidden = cameras.length < 2;
+}
+
+$("startBtn").onclick = startCamera;
+$("flipBtn").onclick = () => {
+  facing = facing === "user" ? "environment" : "user";
+  startCamera();
+};
+
+// Stop the phone screen from going dark while it sits on the floor.
+async function keepScreenOn() {
+  try { await navigator.wakeLock?.request("screen"); } catch { /* not supported: fine */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && stream) keepScreenOn();
+});
+
+// ================================================================
+// 7. DRAWING THE CAMERA PICTURE AND SKELETON
+// ================================================================
+function drawLabel(text, x, y, unit, color = "#fff") {
+  ctx.font = `600 ${Math.round(15 * unit)}px system-ui, sans-serif`;
+  const w = ctx.measureText(text).width, h = 20 * unit, pad = 5 * unit;
+  ctx.fillStyle = "rgba(0,0,0,0.65)";
+  ctx.fillRect(x - w / 2 - pad, y - h / 2, w + pad * 2, h);
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x, y + unit);
+}
+
+function drawLine(x1, y1, x2, y2, color, width, dash = []) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+const css = getComputedStyle(document.documentElement);
+const leftColor = css.getPropertyValue("--left").trim();
+const rightColor = css.getPropertyValue("--right").trim();
+
+function draw(points, m) {
+  const W = canvas.width, H = canvas.height;
+  ctx.save();
+  if (mirrored) { ctx.translate(W, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(video, 0, 0, W, H);
+  ctx.restore();
+  if (!points) return;
+
+  const unit = Math.max(W, H) / 900;   // keeps lines the same size at any camera resolution
+  const X = (i) => (mirrored ? 1 - points[i].x : points[i].x) * W;
+  const Y = (i) => points[i].y * H;
+  const faint = (i) => m.quality !== null && points[i].visibility < SETTINGS.minVisibility;
+
+  // Bones (skip the face points 0–10)
+  for (const { start, end } of PoseLandmarker.POSE_CONNECTIONS) {
+    if (start < 11 || end < 11) continue;
+    const color = faint(start) || faint(end) ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.9)";
+    drawLine(X(start), Y(start), X(end), Y(end), color, 4 * unit);
+  }
+  // Joints: blue = person's left side, orange = right side
+  for (let i = 11; i < 33; i++) {
+    ctx.globalAlpha = faint(i) ? 0.35 : 1;
+    ctx.fillStyle = i % 2 ? leftColor : rightColor;
+    ctx.beginPath();
+    ctx.arc(X(i), Y(i), 6 * unit, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (!debugOn) return;
+
+  // Body line: shoulders to feet. The hip dot shows how far the hips are off it.
+  const footL = m.feetSeen ? BODY.lAnkle : BODY.lKnee, footR = m.feetSeen ? BODY.rAnkle : BODY.rKnee;
+  const sx = (X(BODY.lShoulder) + X(BODY.rShoulder)) / 2, sy = (Y(BODY.lShoulder) + Y(BODY.rShoulder)) / 2;
+  const hx = (X(BODY.lHip) + X(BODY.rHip)) / 2, hy = (Y(BODY.lHip) + Y(BODY.rHip)) / 2;
+  const fx = (X(footL) + X(footR)) / 2, fy = (Y(footL) + Y(footR)) / 2;
+  drawLine(sx, sy, fx, fy, "rgba(250,204,21,0.9)", 3 * unit, [10 * unit, 8 * unit]);
+  drawLabel(`hip ${m.hipLine >= 0 ? "+" : ""}${m.hipLine.toFixed(2)}`, hx, hy - 22 * unit, unit, "#facc15");
+
+  // Hand gap: line between wrists
+  drawLine(X(BODY.lWrist), Y(BODY.lWrist), X(BODY.rWrist), Y(BODY.rWrist), "rgba(74,222,128,0.9)", 3 * unit, [6 * unit, 6 * unit]);
+  drawLabel(`gap ${m.handGap.toFixed(2)}×`,
+    (X(BODY.lWrist) + X(BODY.rWrist)) / 2, (Y(BODY.lWrist) + Y(BODY.rWrist)) / 2 + 24 * unit, unit, "#4ade80");
+
+  // Elbow angles
+  drawLabel(`L ${Math.round(m.elbowL)}°`, X(BODY.lElbow), Y(BODY.lElbow) - 22 * unit, unit, leftColor);
+  drawLabel(`R ${Math.round(m.elbowR)}°`, X(BODY.rElbow), Y(BODY.rElbow) - 22 * unit, unit, rightColor);
+}
+
+// ================================================================
+// 8. DEBUG PANEL
+// ================================================================
+let fps = 0;
+let lastPanelUpdate = 0;
+let latest = null;   // most recent measurements, for the "Copy numbers" button
+
+const signed = (n, digits = 2) => (n >= 0 ? "+" : "") + n.toFixed(digits);
+const viewName = { side: "Side ✗", slant: "Slant ✓", front: "Front ✗" };
+
+function debugRows(m) {
+  if (!m) {
+    return [
+      ["Person found", "No"],
+      ["Speed", `${fps} frames/sec`],
+      ["Tracker", trackerKind || "loading…"],
+    ];
+  }
+  return [
+    ["Person found", m.quality === null ? "Yes" : `Yes (${Math.round(m.quality * 100)}% sure)`],
+    ["Speed", `${fps} frames/sec`],
+    ["Camera view", `${viewName[m.view]} (${m.viewRatio.toFixed(2)})`],
+    ["Left elbow", `${Math.round(m.elbowL)}°`],
+    ["Right elbow", `${Math.round(m.elbowR)}°`],
+    ["Hand gap", `${m.handGap.toFixed(2)}× (3D ${m.handGap3d.toFixed(2)}×)`],
+    ["Hip line", `${signed(m.hipLine)} (flat ${signed(m.hipLine2d)})`],
+    ["Body tilt", `${signed(m.tilt, 0)}°`],
+    ["Body line uses", m.feetSeen ? "ankles" : "knees (feet not visible)"],
+    ["Tracker", `${SETTINGS.model}, ${trackerKind}`],
+  ];
+}
+
+function updateDebugPanel(m, now) {
+  if (!debugOn || now - lastPanelUpdate < 200) return;
+  lastPanelUpdate = now;
+  $("debugRows").innerHTML = debugRows(m).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+}
+
+$("copyBtn").onclick = async () => {
+  const lines = debugRows(latest).map(([k, v]) => `${k}: ${v}`);
+  lines.push(`Screen: ${canvas.width}x${canvas.height}, camera: ${facing}`, `Browser: ${navigator.userAgent}`);
+  const text = lines.join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    $("copyBtn").textContent = "Copied!";
+    setTimeout(() => { $("copyBtn").textContent = "Copy numbers"; }, 1500);
+  } catch {
+    window.prompt("Copy these numbers:", text);
+  }
+};
+
+// ================================================================
+// 9. CAMERA-POSITION ADVICE (the message at the bottom)
+// ================================================================
+function adviseCamera(m) {
+  if (!m) return setHint("I can't see you yet. Get your whole body in the picture.", "bad");
+  if (!m.hipsSeen || (!m.feetSeen && !m.kneesSeen)) return setHint("Move the phone further away. I can't see your legs.", "bad");
+  if (!m.armsSeen) return setHint("I can't see your arms. Move the phone further away.", "bad");
+  if (m.tilt < SETTINGS.pushupTiltMin || m.tilt > SETTINGS.pushupTiltMax) {
+    return setHint("Get into push-up position to check the camera angle.", "");
+  }
+  if (!m.feetSeen) return setHint("I can't see your feet. Move the phone back a little.", "warn");
+  if (m.view === "side") return setHint("Turn the phone a bit toward your head (a slant), so I can see both hands.", "warn");
+  if (m.view === "front") return setHint("Move the phone a bit to the side (a slant), so I can see your hips.", "warn");
+  if (!m.bothHandsSeen) return setHint("I can only see one hand. Turn the phone a little more toward your head.", "warn");
+  setHint("Camera angle looks good!", "good");
+}
+
+// ================================================================
+// 10. MAIN LOOP: one pass per camera frame
+// ================================================================
+let lastVideoTime = -1;
+let framesThisSecond = 0, secondStart = performance.now();
+let switchingToCpu = false;
+
+function frame() {
+  requestAnimationFrame(frame);
+  if (!stream || video.readyState < 2 || video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+
+  if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+  }
+
+  const now = performance.now();
+  let result = null;
+  if (tracker && !switchingToCpu) {
+    try {
+      result = tracker.detectForVideo(video, now);
+    } catch (err) {
+      // Some phones claim graphics-chip support but then fail. Fall back once.
+      console.error(err);
+      if (trackerKind === "GPU") {
+        switchingToCpu = true;
+        tracker.close();
+        tracker = null;
+        loadTracker(false).finally(() => { switchingToCpu = false; });
+      }
+    }
+  }
+
+  const points = result?.landmarks?.[0];
+  const points3d = result?.worldLandmarks?.[0];
+  let m = null;
+  if (points && points3d) {
+    m = smoothMeasurements(measure(points, points3d, canvas.width, canvas.height));
+  } else {
+    steady = null;
+  }
+  latest = m;
+
+  draw(points, m);
+  if (tracker) adviseCamera(m);
+  else if (trackerError) setHint(trackerError, "bad");
+  updateDebugPanel(m, now);
+
+  framesThisSecond++;
+  if (now - secondStart >= 1000) {
+    fps = framesThisSecond;
+    framesThisSecond = 0;
+    secondStart = now;
+  }
+}
+
+showDebug(debugOn);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
