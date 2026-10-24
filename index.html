@@ -3,270 +3,569 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#12162a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Push-up Coach">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
 <title>Push-up Coach</title>
 <style>
+  /* Colours, type and spacing: see DESIGN.md */
   :root {
-    --bg: #0f1115;
-    --panel: rgba(15, 17, 21, 0.85);
-    --raised: #171a21;
-    --text: #f2f4f7;
-    --muted: #9aa3b2;
-    --line: #2a2f3a;
-    --button: #1f2430;
-    --good: #4ade80;
-    --warn: #facc15;
-    --bad: #f87171;
-    --left: #38bdf8;   /* dots on the person's LEFT side */
-    --right: #fb923c;  /* dots on the person's RIGHT side */
+    --ink: #12162a;
+    --chalk: #eceee8;
+    --paper: #f7f8f4;
+    --line: #d6d9d1;
+    --graphite: #5d6375;
+    --cobalt: #2b45ff;
+    --cobalt-on-dark: #8c9bff;
+    --mist: #b3b8c7;
+    --signal: #e5383b;
+    --amber: #f5b83d;
+    --glass: rgba(18, 22, 42, 0.62);
+    --glass-strong: rgba(18, 22, 42, 0.86);
+    --left: #8c9bff;    /* dots on the person's LEFT side */
+    --right: #ffb27a;   /* dots on the person's RIGHT side */
+    --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --dock-height: 76px;
   }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; height: 100%;
-    background: var(--bg); color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  html, body { margin: 0; height: 100%; }
+  body {
+    height: 100dvh; overflow: hidden;
+    font-family: var(--font); font-weight: 420; font-size: 16px; line-height: 1.45;
+    color: var(--ink); background: var(--ink);
+    -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
   }
-  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  button, select, input { font: inherit; color: inherit; }
+  button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--cobalt-on-dark); outline-offset: 3px; }
+  .chalk :focus-visible, .sheet :focus-visible, .set-sheet :focus-visible { outline-color: var(--cobalt); }
+  h1, h2, h3, p, ol, ul { margin: 0; }
+  svg { display: block; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
 
-  header {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px; padding-top: max(6px, env(safe-area-inset-top));
-    border-bottom: 1px solid var(--line);
+  /* ---------- Top bar ---------- */
+  .bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 8;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: calc(var(--safe-top) + 10px) 16px 10px;
+    color: var(--ink);
+    background: rgba(236, 238, 232, 0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
-  header h1 { font-size: 17px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.live .bar {
+    color: #fff;
+    background: linear-gradient(to bottom, rgba(18, 22, 42, 0.78), rgba(18, 22, 42, 0));
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-name {
+    font-stretch: 75%; font-weight: 750; font-size: 20px; letter-spacing: -0.005em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 50%; border: 0; padding: 0;
+    display: grid; place-items: center;
+    background: rgba(18, 22, 42, 0.06); color: inherit;
+  }
+  body.live .icon-btn { background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .icon { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  button, select {
-    font: inherit; font-size: 15px; color: var(--text);
-    background: var(--button); border: 1px solid var(--line); border-radius: 10px;
-    padding: 8px 12px; min-height: 40px; cursor: pointer;
-  }
-  button.on { border-color: var(--good); color: var(--good); }
-  button.primary {
-    background: var(--good); color: #0b1a10; border: none;
-    font-weight: 700; font-size: 18px; padding: 14px 28px;
-  }
-  button.danger { color: var(--bad); }
-  button:disabled { opacity: 0.45; cursor: default; }
-  header button .icon { display: none; }
-  @media (max-width: 640px) {
-    header button { padding: 6px 9px; }
-    header button .icon { display: inline; }
-    header button .label { display: none; }
-    #debug { font-size: 11px; padding: 6px 8px; }
-    footer { gap: 6px; }
-    footer label span { display: none; }
-    footer button, footer select { font-size: 14px; padding: 6px 8px; }
-    #modeSelect { max-width: 130px; }
-  }
-
-  #stage { position: relative; flex: 1; min-height: 0; background: #000; }
-  #view { width: 100%; height: 100%; object-fit: contain; display: block; }
-
-  /* The camera feed itself is kept invisible; we draw it onto the canvas instead. */
+  /* ---------- Camera stage ---------- */
+  .stage { position: fixed; inset: 0; background: var(--ink); }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
   #video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
-  #start {
-    position: absolute; inset: 0; overflow: auto;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 14px; padding: 16px; text-align: center; background: var(--bg);
+  .hint {
+    position: absolute; z-index: 4; left: 50%; top: calc(var(--safe-top) + 68px); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    width: max-content; max-width: calc(100% - 32px);
+    padding: 9px 16px 9px 14px; border-radius: 999px;
+    background: var(--glass-strong); color: #fff;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    font-size: 15px; font-weight: 520; line-height: 1.3; pointer-events: none;
   }
-  #start h2 { margin: 0; font-size: 24px; }
-  #start p { margin: 0; max-width: 34em; color: var(--muted); line-height: 1.45; }
-  #status { min-height: 1.45em; color: var(--text) !important; }
-  #status.bad { color: var(--bad) !important; }
+  .hint::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mist); }
+  .hint[data-kind="good"]::before { background: var(--cobalt-on-dark); }
+  .hint[data-kind="warn"]::before { background: var(--amber); }
+  .hint[data-kind="bad"]::before { background: var(--signal); }
 
-  #counter {
-    position: absolute; top: 8px; right: 8px; min-width: 104px; max-width: 40%;
-    padding: 8px 12px; border-radius: 16px; background: var(--panel);
-    text-align: center; pointer-events: none;
+  .toast {
+    position: absolute; z-index: 5; left: 50%; top: calc(var(--safe-top) + 116px); transform: translateX(-50%);
+    width: max-content; max-width: calc(100% - 32px);
+    padding: 12px 18px; border-radius: 16px;
+    background: var(--signal); color: #fff;
+    font-weight: 620; font-size: 16px; line-height: 1.3; text-align: center;
+    box-shadow: 0 10px 30px rgba(229, 56, 59, 0.35); pointer-events: none;
   }
-  #countBig { font-size: 60px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-  #countType { font-size: 14px; font-weight: 600; margin-top: 4px; }
-  #countGoal { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .toast.show { animation: toast-in 220ms cubic-bezier(.2, .8, .2, 1); }
+  @keyframes toast-in { from { opacity: 0; transform: translate(-50%, -8px); } }
 
-  #flash {
-    position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%);
-    max-width: calc(100% - 32px); padding: 10px 22px; border-radius: 18px;
-    background: var(--panel); font-size: 44px; font-weight: 800; text-align: center; pointer-events: none;
+  /* ---------- The depth gauge and rep count ---------- */
+  .hud {
+    position: absolute; z-index: 3; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--dock-height) + var(--safe-bottom) + 6px);
+    width: min(330px, 86vw); text-align: center; color: #fff; pointer-events: none;
+    transition: opacity 200ms;
   }
-  #flash.good { color: var(--good); }
-  #flash.bad { color: var(--bad); font-size: 24px; }
-
-  #hint {
-    position: absolute; left: 50%; bottom: 12px;
-    transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
-    padding: 8px 16px; border-radius: 999px; background: var(--panel);
-    font-size: 15px; text-align: center; pointer-events: none;
+  .hud::before {
+    content: ""; position: absolute; z-index: -1; inset: -12% -18% -22%;
+    background: radial-gradient(closest-side, rgba(18, 22, 42, 0.62), rgba(18, 22, 42, 0));
   }
-  #hint.good { color: var(--good); }
-  #hint.warn { color: var(--warn); }
-  #hint.bad { color: var(--bad); }
-
-  #debug {
-    position: absolute; top: 8px; left: 8px;
-    width: min(270px, calc(100% - 132px)); max-height: calc(100% - 70px); overflow: auto;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 10px; font-size: 12px;
+  .hud.idle { opacity: 0.6; }
+  .gauge { width: 100%; height: auto; overflow: visible; }
+  .gauge .track { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 7; stroke-linecap: round; }
+  .gauge .ticks line { stroke: rgba(255, 255, 255, 0.42); stroke-width: 1.6; stroke-linecap: round; }
+  .gauge .ticks line.major { stroke: rgba(255, 255, 255, 0.7); stroke-width: 2.2; }
+  .gauge .fill { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 0 100; }
+  .gauge .target { stroke: rgba(255, 255, 255, 0.85); stroke-width: 3; stroke-linecap: round; }
+  .hud.reached .gauge .fill, .hud.reached .gauge .target { stroke: var(--cobalt-on-dark); }
+  .hud.reached .gauge { filter: drop-shadow(0 0 10px rgba(140, 155, 255, 0.55)); }
+  .count-block { position: absolute; left: 0; right: 0; top: 30%; }
+  .count {
+    font-stretch: 62%; font-weight: 800; font-size: clamp(92px, 27vw, 128px); line-height: 0.82;
+    letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
   }
-  #debug table { width: 100%; border-collapse: collapse; }
-  #debug td { padding: 1px 0; vertical-align: top; }
-  #debug td:first-child { white-space: nowrap; }
-  #debug td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 8px; }
-  #debug #copyBtn { width: 100%; margin-top: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; }
-  #debug details { margin-top: 6px; color: var(--muted); line-height: 1.4; }
-  #debug details p { margin: 4px 0; }
-  .dotL { color: var(--left); } .dotR { color: var(--right); }
+  .count.bump { animation: bump 420ms cubic-bezier(.2, .8, .2, 1); }
+  @keyframes bump { 30% { transform: scale(1.12); color: var(--cobalt-on-dark); } }
+  .count-type, .count-goal { text-shadow: 0 1px 2px rgba(18, 22, 42, 0.6), 0 0 16px rgba(18, 22, 42, 0.85); }
+  .count-type { margin-top: 10px; font-size: 16px; font-weight: 620; }
+  .count-goal { margin-top: 2px; font-size: 14px; color: #d3d7e2; }
 
-  .card {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    width: min(360px, calc(100% - 32px)); max-height: calc(100% - 24px); overflow: auto;
-    padding: 16px; border-radius: 16px; border: 1px solid var(--line);
-    background: var(--bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  /* ---------- Dock ---------- */
+  .dock {
+    position: fixed; z-index: 6; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px calc(var(--safe-bottom) + 12px);
+    color: #fff;
+    background: linear-gradient(to top, rgba(18, 22, 42, 0.9) 30%, rgba(18, 22, 42, 0));
   }
-  .card h3 { margin: 0 0 8px; font-size: 20px; }
-  .card p { margin: 6px 0; line-height: 1.4; }
-  .card button { width: 100%; margin-top: 10px; }
-  .big { font-size: 34px; font-weight: 800; }
-  .muted { color: var(--muted); }
-  .good { color: var(--good); }
-  .bad { color: var(--bad); }
-
-  .sheet { position: absolute; inset: 0; z-index: 5; overflow: auto; background: var(--bg); padding: 12px 16px 24px; }
-  .sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-  .sheetHead h2 { margin: 0; font-size: 20px; }
-  .step, .workout { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 8px 0; background: var(--raised); }
-  .step p, .workout p { margin: 4px 0; line-height: 1.4; }
-  .step.current { border-color: var(--good); }
-  .step.locked { opacity: 0.6; }
-  .step button { margin-top: 6px; min-height: 34px; padding: 4px 12px; font-size: 14px; }
-  .workoutHead { display: flex; justify-content: space-between; gap: 8px; }
-  .setting {
-    display: flex; gap: 12px; align-items: flex-start;
-    border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--raised);
-    line-height: 1.4; cursor: pointer;
+  .picker {
+    position: relative; display: flex; flex-direction: column; justify-content: center;
+    flex: 1 1 auto; min-width: 0; max-width: 260px; height: 52px; padding: 0 30px 0 13px; border-radius: 14px;
+    background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
-  .setting input { width: 22px; height: 22px; margin: 2px 0 0; flex: none; accent-color: var(--good); }
-  .workout ol { margin: 6px 0 0; padding-left: 22px; line-height: 1.5; }
-
-  footer {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-    padding: 6px 10px; padding-bottom: max(6px, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
+  .picker-label { font-size: 12px; line-height: 1.2; color: var(--mist); }
+  .picker select {
+    appearance: none; -webkit-appearance: none; border: 0; padding: 0; margin: 0;
+    background: transparent; font-weight: 620; font-size: 16px; line-height: 1.3; font-stretch: 85%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
-  footer label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
-  #finishBtn { margin-left: auto; }
+  .picker select option { color: var(--ink); }
+  .picker svg { position: absolute; right: 8px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); pointer-events: none; }
+  .toggle {
+    flex: none; height: 52px; padding: 0 14px; border-radius: 14px; border: 0;
+    background: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 600; font-stretch: 90%;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .toggle[aria-pressed="true"] { background: #fff; color: var(--ink); }
+  .primary {
+    height: 52px; padding: 0 20px; border-radius: 14px; border: 0;
+    background: var(--cobalt); color: #fff; font-weight: 650; font-stretch: 90%; font-size: 17px;
+  }
+  .primary:disabled { background: rgba(255, 255, 255, 0.12); color: var(--mist); cursor: default; }
+  .dock .primary { margin-left: auto; flex: none; }
 
-  /* Phone turned sideways: make the bars and panels smaller */
-  @media (max-height: 500px) {
-    header { padding-top: max(3px, env(safe-area-inset-top)); padding-bottom: 3px; }
-    header h1 { font-size: 15px; }
-    header button, footer button, footer select { min-height: 32px; padding: 3px 10px; font-size: 14px; }
-    footer { padding-top: 3px; padding-bottom: max(3px, env(safe-area-inset-bottom)); }
-    #debug { width: 210px; font-size: 11px; padding: 6px 8px; }
-    #countBig { font-size: 44px; }
-    #hint { font-size: 13px; padding: 6px 12px; }
+  /* ---------- Measurements panel (debug) ---------- */
+  .debug {
+    position: absolute; z-index: 4; left: 12px; top: calc(var(--safe-top) + 116px);
+    width: min(268px, calc(100% - 24px)); max-height: calc(100% - var(--safe-top) - 116px - var(--dock-height) - 220px);
+    overflow: auto; padding: 10px 12px; border-radius: 16px;
+    background: var(--glass-strong); color: #fff; font-size: 12.5px; line-height: 1.35;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .debug table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .debug td { padding: 2px 0; vertical-align: top; }
+  .debug td:first-child { color: var(--mist); white-space: nowrap; padding-right: 10px; }
+  .debug td:last-child { text-align: right; font-weight: 600; }
+  .debug .copy {
+    width: 100%; margin-top: 8px; height: 36px; border-radius: 10px; border: 0;
+    background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 600; font-size: 14px;
   }
 
-  [hidden] { display: none !important; }
+  /* ---------- Start screen ---------- */
+  .chalk { background: var(--chalk); color: var(--ink); }
+  .start {
+    position: fixed; inset: 0; z-index: 7; overflow: auto;
+    padding: calc(var(--safe-top) + 70px) 0 calc(var(--safe-bottom) + 28px);
+  }
+  .start-inner { max-width: 520px; margin: 0 auto; padding: 0 24px; }
+  .setup-art { width: 100%; height: auto; margin: 4px 0 26px; }
+  .setup-art .ink { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .setup-art .floor { stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
+  .setup-art .ray { stroke: var(--cobalt); stroke-width: 1.6; stroke-dasharray: 3 5; stroke-linecap: round; }
+  .setup-art .cone { fill: var(--cobalt); opacity: 0.08; }
+  .setup-art .measure { stroke: var(--graphite); stroke-width: 1.3; }
+  .setup-art text { font-family: var(--font); font-size: 11px; fill: var(--graphite); }
+  .eyebrow-level { font-size: 15px; font-weight: 600; color: var(--graphite); }
+  .title {
+    margin-top: 2px; font-stretch: 75%; font-weight: 750; font-size: clamp(34px, 10vw, 44px);
+    line-height: 1; letter-spacing: -0.01em;
+  }
+  .lede { margin-top: 10px; color: var(--graphite); max-width: 34em; }
+  .sets-dots { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; color: var(--graphite); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--cobalt); }
+  .dot.on { background: var(--cobalt); }
+  .sets-dots .dot:last-of-type { margin-right: 4px; }
+  .steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: baseline; counter-increment: step; }
+  .steps li::before {
+    content: counter(step); font-stretch: 62%; font-weight: 800; font-size: 26px; line-height: 1;
+    color: var(--cobalt); font-variant-numeric: tabular-nums;
+  }
+  .start .primary { width: 100%; height: 58px; margin-top: 30px; font-size: 18px; border-radius: 16px; }
+  .status { margin-top: 12px; min-height: 1.45em; font-size: 15px; color: var(--graphite); }
+  .status.bad { color: var(--signal); }
+  .fine-print { margin-top: 6px; font-size: 14px; color: var(--graphite); }
+
+  /* ---------- Full-screen sheets: ladder, history, settings ---------- */
+  .sheet {
+    position: fixed; inset: 0; z-index: 10; overflow: auto;
+    padding: 0 0 calc(var(--safe-bottom) + 36px);
+    animation: sheet-in 260ms cubic-bezier(.2, .8, .2, 1);
+  }
+  @keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } }
+  .sheet-inner { max-width: 560px; margin: 0 auto; padding: 0 20px; }
+  .sheet-head {
+    position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 6px; padding: calc(var(--safe-top) + 14px) 0 10px; background: var(--chalk);
+  }
+  .sheet-head h2 { font-stretch: 75%; font-weight: 750; font-size: 34px; line-height: 1.05; letter-spacing: -0.01em; }
+  .sheet-intro { color: var(--graphite); margin: 4px 0 22px; max-width: 34em; }
+  .text-btn { border: 0; background: none; padding: 6px 0; color: var(--cobalt); font-weight: 620; }
+  .danger { color: var(--signal); }
+
+  /* Ladder: a rail of rungs, hardest at the top */
+  .rail { list-style: none; padding: 0; position: relative; }
+  .rail::before { content: ""; position: absolute; left: 13px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
+  .rung { position: relative; padding: 0 0 22px 46px; }
+  .rung .node {
+    position: absolute; left: 4px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--chalk); border: 2px solid var(--line); display: grid; place-items: center;
+  }
+  .rung.done .node { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+  .rung.done .node svg { width: 13px; height: 13px; stroke-width: 2.6; }
+  .rung.current .node { border-color: var(--cobalt); box-shadow: 0 0 0 5px rgba(43, 69, 255, 0.14); }
+  .rung-head { display: flex; align-items: baseline; gap: 10px; }
+  .rung-num { font-stretch: 62%; font-weight: 800; font-size: 22px; line-height: 1; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .rung h3 { font-stretch: 85%; font-weight: 680; font-size: 20px; line-height: 1.2; }
+  .rung-how { margin-top: 4px; color: var(--graphite); font-size: 15px; }
+  .rung-target { margin-top: 4px; font-size: 15px; }
+  .rung.locked h3, .rung.locked .rung-target { color: var(--graphite); }
+  .rung.current .rung-body {
+    margin: -10px 0 0 -2px; padding: 12px 16px 14px; border-radius: 16px;
+    background: var(--paper); border: 1px solid var(--line);
+  }
+  .rung.current .rung-num { color: var(--cobalt); }
+  .rung .sets-dots { margin-top: 10px; }
+
+  /* History */
+  .workout { padding: 16px 0 18px; border-top: 1px solid var(--line); }
+  .workout:first-child { border-top: 0; padding-top: 4px; }
+  .workout-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .workout-head h3 { font-stretch: 85%; font-weight: 680; font-size: 18px; }
+  .workout-total { font-size: 15px; color: var(--graphite); white-space: nowrap; }
+  .workout-total b { font-stretch: 62%; font-weight: 800; font-size: 26px; color: var(--ink); margin-right: 4px; }
+  .set-rows { list-style: none; padding: 0; margin-top: 10px; display: grid; gap: 8px; }
+  .set-row { display: grid; grid-template-columns: 1fr 34px; gap: 10px; align-items: center; }
+  .set-bar { height: 10px; border-radius: 5px; background: rgba(18, 22, 42, 0.07); overflow: hidden; }
+  .set-bar i { display: block; height: 100%; border-radius: 5px; background: var(--cobalt); }
+  .set-reps { font-stretch: 62%; font-weight: 800; font-size: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+  .set-detail { grid-column: 1 / -1; margin-top: -4px; font-size: 13.5px; color: var(--graphite); }
+  .empty { color: var(--graphite); padding: 8px 0 20px; }
+
+  /* Settings */
+  .group { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; cursor: pointer; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row-text { display: grid; gap: 2px; }
+  .row-text b { font-weight: 620; }
+  .row-text small { font-size: 14px; color: var(--graphite); line-height: 1.4; }
+  .switch {
+    appearance: none; -webkit-appearance: none; flex: none; margin: 0;
+    width: 52px; height: 32px; border-radius: 999px; background: #cdd1c8; position: relative; cursor: pointer;
+    transition: background 160ms;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(18, 22, 42, 0.3); transition: transform 160ms;
+  }
+  .switch:checked { background: var(--cobalt); }
+  .switch:checked::after { transform: translateX(20px); }
+  .settings-note { margin-top: 14px; font-size: 14px; color: var(--graphite); }
+
+  /* ---------- After a set: bottom sheet over the camera ---------- */
+  .set-sheet {
+    position: fixed; z-index: 9; left: 0; right: 0; bottom: 0;
+    max-height: 80dvh; overflow: auto;
+    padding: 22px 0 calc(var(--safe-bottom) + 18px);
+    border-radius: 26px 26px 0 0; box-shadow: 0 -16px 50px rgba(0, 0, 0, 0.4);
+    animation: sheet-up 300ms cubic-bezier(.2, .8, .2, 1);
+  }
+  @keyframes sheet-up { from { transform: translateY(100%); } }
+  .set-sheet .sheet-inner { display: grid; gap: 4px; }
+  .text-btn.quiet { color: var(--graphite); font-weight: 560; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+  .set-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .set-head h2 { font-stretch: 75%; font-weight: 750; font-size: 30px; line-height: 1.05; }
+  .rest { font-size: 15px; color: var(--graphite); }
+  .set-count { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+  .set-count b { font-stretch: 62%; font-weight: 800; font-size: 76px; line-height: 0.9; font-variant-numeric: tabular-nums; }
+  .set-count span { font-size: 17px; color: var(--graphite); }
+  .set-types { font-weight: 560; }
+  .set-bad { color: var(--signal); font-size: 15px; }
+  .set-note { color: var(--graphite); font-size: 15px; }
+  .set-progress { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .set-progress .sets-dots { margin-top: 8px; }
+  .secondary {
+    height: 52px; margin-top: 16px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--paper); color: var(--ink); font-weight: 650; font-size: 17px; width: 100%;
+  }
+
+  /* ---------- Level up ---------- */
+  .levelup {
+    position: fixed; inset: 0; z-index: 11; display: grid; place-items: center;
+    padding: calc(var(--safe-top) + 24px) 28px calc(var(--safe-bottom) + 24px);
+    background: var(--cobalt); color: #fff; text-align: center;
+  }
+  .levelup-inner { max-width: 380px; display: grid; justify-items: center; gap: 10px; }
+  .levelup-mark { width: 132px; height: 132px; margin-bottom: 12px; }
+  .levelup-mark path, .levelup-mark line { fill: none; stroke: var(--chalk); stroke-linecap: round; stroke-linejoin: round; }
+  .levelup-mark .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 700ms cubic-bezier(.6, 0, .2, 1) forwards; }
+  .levelup-mark .ticks line { opacity: 0; animation: appear 300ms ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes appear { to { opacity: 1; } }
+  .levelup h2 { font-stretch: 75%; font-weight: 750; font-size: 42px; line-height: 1; }
+  .levelup .next { font-stretch: 85%; font-weight: 650; font-size: 22px; }
+  .levelup .how { color: rgba(255, 255, 255, 0.82); }
+  .levelup button {
+    margin-top: 18px; height: 54px; padding: 0 32px; border-radius: 16px; border: 0;
+    background: #fff; color: var(--cobalt); font-weight: 700; font-size: 17px;
+  }
+
+  /* ---------- Small and sideways screens ---------- */
+  @media (max-width: 380px) {
+    .bar-actions { gap: 4px; }
+    .icon-btn { width: 38px; height: 38px; }
+    .brand-name { font-size: 18px; }
+    .toggle { padding: 0 12px; }
+    .primary { padding: 0 16px; }
+  }
+  @media (max-height: 520px) {
+    :root { --dock-height: 92px; }
+    .hud { width: min(230px, 40vw); }
+    .count { font-size: 76px; }
+    .count-type { margin-top: 6px; font-size: 14px; }
+    .count-goal { font-size: 12px; }
+    .picker, .toggle, .dock .primary { height: 44px; }
+    .hint { top: calc(var(--safe-top) + 60px); font-size: 14px; }
+    .toast { top: calc(var(--safe-top) + 100px); }
+    .debug { top: calc(var(--safe-top) + 60px); max-height: calc(100% - var(--safe-top) - 60px - var(--dock-height) - 16px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .levelup-mark .draw { stroke-dashoffset: 0; }
+    .levelup-mark .ticks line { opacity: 1; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Push-up Coach</h1>
-  <button id="ladderBtn" aria-label="Ladder"><span class="icon">🪜</span><span class="label">Ladder</span></button>
-  <button id="historyBtn" aria-label="History"><span class="icon">📋</span><span class="label">History</span></button>
-  <button id="settingsBtn" aria-label="Settings"><span class="icon">⚙️</span><span class="label">Settings</span></button>
-  <button id="voiceBtn" aria-label="Voice"><span class="icon">🔊</span><span class="label">Voice</span></button>
-  <button id="debugBtn" aria-label="Debug"><span class="icon">🐞</span><span class="label">Debug</span></button>
-  <button id="flipBtn" aria-label="Flip camera" hidden><span class="icon">🔄</span><span class="label">Flip</span></button>
+
+<!-- Icons, drawn once and reused -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-ladder" viewBox="0 0 24 24"><path d="M7 3v18M17 3v18M7 7.5h10M7 12h10M7 16.5h10"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.6a7.6 7.6 0 0 1 0 10.8"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  </defs>
+</svg>
+
+<header class="bar">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#2b45ff"/>
+      <path d="M9 7.5v13.5h13.5" fill="none" stroke="#eceee8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M11.9 14.6a8 8 0 0 1 5.1 3.3" fill="none" stroke="#eceee8" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    <span class="brand-name">Push-up Coach</span>
+  </div>
+  <nav class="bar-actions">
+    <button id="ladderBtn" class="icon-btn" aria-label="Ladder"><svg class="icon"><use href="#i-ladder"/></svg></button>
+    <button id="historyBtn" class="icon-btn" aria-label="History"><svg class="icon"><use href="#i-history"/></svg></button>
+    <button id="voiceBtn" class="icon-btn" aria-label="Say counts out loud" aria-pressed="true"><svg class="icon"><use href="#i-sound"/></svg></button>
+    <button id="settingsBtn" class="icon-btn" aria-label="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+  </nav>
 </header>
 
-<main id="stage">
+<main class="stage">
   <canvas id="view"></canvas>
 
-  <div id="counter" hidden>
-    <div id="countBig">0</div>
-    <div id="countType"></div>
-    <div id="countGoal"></div>
-  </div>
-  <div id="flash" hidden></div>
-  <div id="hint" hidden></div>
+  <div id="hint" class="hint" hidden></div>
+  <div id="toast" class="toast" role="status" hidden></div>
 
-  <div id="debug" hidden>
+  <section id="hud" class="hud idle" hidden aria-live="polite">
+    <svg class="gauge" viewBox="0 0 320 176" aria-hidden="true">
+      <path class="track" d="M 20 166 A 140 140 0 0 1 300 166"/>
+      <g class="ticks" id="gaugeTicks"></g>
+      <path class="fill" id="gaugeLeft" pathLength="100" d="M 20 166 A 140 140 0 0 1 160 26"/>
+      <path class="fill" id="gaugeRight" pathLength="100" d="M 300 166 A 140 140 0 0 0 160 26"/>
+      <line class="target" x1="160" y1="12" x2="160" y2="40"/>
+    </svg>
+    <div class="count-block">
+      <div id="countBig" class="count">0</div>
+      <div id="countType" class="count-type"></div>
+      <div id="countGoal" class="count-goal"></div>
+    </div>
+  </section>
+
+  <div id="debug" class="debug" hidden>
     <table><tbody id="debugRows"></tbody></table>
-    <button id="copyBtn">Copy numbers</button>
-    <details>
-      <summary>What do these numbers mean?</summary>
-      <p><b>Elbow</b>: 180° = arm straight, 90° = bent at a right angle.</p>
-      <p><b>Shoulder drop</b>: how far your shoulders have come down toward your hands since the top of the rep. 0% = top, 100% = shoulders at hand level.</p>
-      <p><b>Hand gap</b>: distance between your wrists compared with your shoulders. 1.0× = same as your shoulders, 2.0× = twice as wide.</p>
-      <p><b>Hip line</b>: 0 = body straight. Plus = hips sagging. Minus = hips pushed up high. Only used when the camera is at a slant or side.</p>
-      <p><b>Body tilt</b>: 0° = flat. Plus = head higher than feet.</p>
-      <p><b>Knees</b>: how far down the screen your knees are (0 = level with your shoulders, 1 = level with your hands), and how bent they are (180° = legs straight). Low or bent knees = knee push-up.</p>
-      <p><span class="dotL">Blue dots</span> = your left side, <span class="dotR">orange dots</span> = your right side.</p>
-    </details>
+    <button id="copyBtn" class="copy">Copy numbers</button>
   </div>
-
-  <div id="setCard" class="card" hidden>
-    <h3 id="setTitle"></h3>
-    <div id="setBody"></div>
-    <p id="restTimer" class="muted"></p>
-    <button id="setOkBtn">OK</button>
-  </div>
-
-  <div id="levelCard" class="card" hidden>
-    <h3>🎉 Level up!</h3>
-    <div id="levelBody"></div>
-    <button id="levelOkBtn" class="primary">Nice!</button>
-  </div>
-
-  <div id="start">
-    <h2>Push-up Coach</h2>
-    <p>Stand your phone upright on the floor, about a forearm's length in front of where your hands will go, with the screen facing you. Lean it against something so it doesn't fall. You should see both hands, both arms and your shoulders on screen.</p>
-    <button id="startBtn" class="primary">Start camera</button>
-    <p id="status">Loading body tracker…</p>
-    <p style="font-size:13px">Your video stays on this device. Nothing is uploaded.</p>
-  </div>
-
-  <section id="ladderSheet" class="sheet" hidden>
-    <div class="sheetHead"><h2>Progression ladder</h2><button data-close>Close</button></div>
-    <p class="muted">Unlock the next level by doing the target in one workout. Only good reps of that exact push-up count.</p>
-    <div id="ladderList"></div>
-  </section>
-
-  <section id="historySheet" class="sheet" hidden>
-    <div class="sheetHead"><h2>History</h2><button data-close>Close</button></div>
-    <p id="storageWarning" class="bad" hidden>This browser isn't letting the app save anything (private browsing?). Your history will be lost when you close the page.</p>
-    <div id="historyList"></div>
-    <button id="clearHistoryBtn" class="danger">Delete all history</button>
-  </section>
-
-  <section id="settingsSheet" class="sheet" hidden>
-    <div class="sheetHead"><h2>Settings</h2><button data-close>Close</button></div>
-    <label class="setting">
-      <input type="checkbox" id="countKneesBox">
-      <span>
-        <b>Count knee push-ups</b><br>
-        <span class="muted">On: knee push-ups count and show as "Knee" (they don't count toward the ladder). Off: they show "Not counted: knee push-up".</span>
-      </span>
-    </label>
-    <p class="muted">Knee push-up detection is still being tuned. If it gets one wrong, turn on Debug, do a few reps, tap Copy numbers and send the result.</p>
-  </section>
 </main>
 
-<footer id="controls" hidden>
-  <label><span>Exercise</span>
-    <select id="modeSelect" aria-label="Exercise">
+<footer id="controls" class="dock" hidden>
+  <label class="picker">
+    <span class="picker-label">Exercise</span>
+    <select id="modeSelect">
       <option value="auto">Auto-detect</option>
       <option value="incline">Incline</option>
       <option value="decline">Decline</option>
       <option value="pseudoPlanche">Pseudo-planche</option>
       <option value="oneArm">One-arm</option>
     </select>
+    <svg class="icon"><use href="#i-chevron"/></svg>
   </label>
-  <button id="knuckleBtn">☐ Knuckles</button>
-  <button id="finishBtn" disabled>Finish set</button>
+  <button id="knuckleBtn" class="toggle" aria-pressed="false">Knuckles</button>
+  <button id="finishBtn" class="primary" disabled>Finish set</button>
 </footer>
+
+<section id="start" class="start chalk">
+  <div class="start-inner">
+    <svg class="setup-art" viewBox="0 30 340 140" role="img" aria-label="A phone standing on the floor in front of your hands, facing you, while you hold a push-up.">
+      <polygon class="cone" points="41,74 95,58 120,134"/>
+      <line class="ray" x1="41" y1="74" x2="95" y2="58"/>
+      <line class="ray" x1="41" y1="74" x2="120" y2="134"/>
+      <line class="floor" x1="8" y1="137" x2="332" y2="137"/>
+      <g transform="rotate(-7 40 136)">
+        <rect class="ink" x="31" y="70" width="19" height="66" rx="4.5"/>
+        <circle cx="40.5" cy="75.5" r="1.6" fill="#12162a"/>
+      </g>
+      <line class="ink" x1="112" y1="69" x2="118" y2="71"/>
+      <circle class="ink" cx="104" cy="63" r="10" fill="#eceee8"/>
+      <polyline class="ink" points="118,70 214,93 300,124"/>
+      <line class="ink" x1="300" y1="124" x2="309" y2="136"/>
+      <polyline class="ink" points="118,70 118,135 129,135"/>
+      <line class="measure" x1="40" y1="152" x2="118" y2="152"/>
+      <line class="measure" x1="40" y1="147" x2="40" y2="157"/>
+      <line class="measure" x1="118" y1="147" x2="118" y2="157"/>
+      <text x="79" y="167" text-anchor="middle">about 40 cm</text>
+    </svg>
+
+    <p id="homeLevel" class="eyebrow-level"></p>
+    <h1 id="homeTitle" class="title"></h1>
+    <p id="homeGoal" class="lede"></p>
+    <div id="homeDots" class="sets-dots"></div>
+
+    <ol class="steps">
+      <li>Stand your phone up on the floor, about a forearm's length in front of where your hands go.</li>
+      <li>Turn the screen toward you, so you can see your count.</li>
+      <li>Keep both hands and both shoulders in the picture.</li>
+    </ol>
+
+    <button id="startBtn" class="primary">Start camera</button>
+    <p id="status" class="status" role="status">Loading the body tracker…</p>
+    <p class="fine-print">Your video stays on this phone. Nothing is uploaded.</p>
+  </div>
+</section>
+
+<section id="ladderSheet" class="sheet chalk" hidden aria-labelledby="ladderTitle">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="ladderTitle">Ladder</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+    </div>
+    <p class="sheet-intro">Do the target in one workout to unlock the next level. Only good reps of that push-up count.</p>
+    <ol id="ladderList" class="rail"></ol>
+  </div>
+</section>
+
+<section id="historySheet" class="sheet chalk" hidden aria-labelledby="historyTitle">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="historyTitle">History</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+    </div>
+    <p id="storageWarning" class="sheet-intro danger" hidden>This browser isn't saving anything (private browsing?), so your history disappears when you close the page.</p>
+    <div id="historyList"></div>
+    <button id="clearHistoryBtn" class="text-btn danger">Delete all history</button>
+  </div>
+</section>
+
+<section id="settingsSheet" class="sheet chalk" hidden aria-labelledby="settingsTitle">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="settingsTitle">Settings</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="group" style="margin-top: 16px">
+      <label class="row">
+        <span class="row-text"><b>Count knee push-ups</b><small>When on, they count and show as Knee. They never count toward the ladder.</small></span>
+        <input type="checkbox" class="switch" id="countKneesBox">
+      </label>
+      <label class="row">
+        <span class="row-text"><b>Say counts out loud</b></span>
+        <input type="checkbox" class="switch" id="voiceBox">
+      </label>
+      <label class="row">
+        <span class="row-text"><b>Show measurements</b><small>Live angles and numbers on the camera, plus Copy numbers for tuning.</small></span>
+        <input type="checkbox" class="switch" id="debugBox">
+      </label>
+      <div class="row" id="flipRow" hidden>
+        <span class="row-text"><b>Camera</b><small id="cameraName">Front camera</small></span>
+        <button id="flipBtn" class="text-btn">Switch</button>
+      </div>
+    </div>
+    <p class="settings-note">If a rep gets the wrong label, turn on Show measurements, do a few reps, tap Copy numbers and send the result.</p>
+  </div>
+</section>
+
+<section id="setCard" class="set-sheet chalk" hidden aria-labelledby="setTitle">
+  <div class="sheet-inner">
+    <div class="set-head"><h2 id="setTitle"></h2><span id="restTimer" class="rest num"></span></div>
+    <div id="setBody"></div>
+    <button id="setOkBtn" class="secondary">Close</button>
+  </div>
+</section>
+
+<section id="levelCard" class="levelup" hidden aria-labelledby="levelTitle">
+  <div class="levelup-inner">
+    <svg class="levelup-mark" viewBox="0 0 132 132" aria-hidden="true">
+      <path class="draw" pathLength="1" d="M 32 18 V 106 H 120" stroke-width="10"/>
+      <path class="draw" pathLength="1" d="M 81.4 106 A 49.4 49.4 0 0 0 32 56.6" stroke-width="2.4" style="animation-delay: 380ms"/>
+      <g class="ticks" id="levelTicks"></g>
+    </svg>
+    <h2 id="levelTitle"></h2>
+    <p id="levelNext" class="next"></p>
+    <p id="levelHow" class="how"></p>
+    <button id="levelOkBtn">Got it</button>
+  </div>
+</section>
 
 <video id="video" playsinline muted></video>
 
@@ -693,12 +992,12 @@ function currentWorkout(history, now) {
 // ================================================================
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("view"), ctx = canvas.getContext("2d");
-const hintEl = $("hint"), statusEl = $("status"), debugEl = $("debug"), flashEl = $("flash");
+const hintEl = $("hint"), statusEl = $("status"), debugEl = $("debug"), toastEl = $("toast"), hud = $("hud");
 
 const storageWorks = saveData("check", true);
 let history = loadData("history", []);
 let level = loadData("level", 0);
-let debugOn = loadData("debug", true);
+let debugOn = loadData("debug", false);
 let voiceOn = loadData("voice", true);
 let knuckles = loadData("knuckles", false);
 let countKnees = loadData("countKnees", true);
@@ -713,25 +1012,26 @@ $("countKneesBox").onchange = (e) => {
 function showDebug(on) {
   debugOn = on;
   saveData("debug", on);
-  $("debugBtn").classList.toggle("on", on);
+  $("debugBox").checked = on;
   debugEl.hidden = !on || !stream;
 }
-$("debugBtn").onclick = () => showDebug(!debugOn);
+$("debugBox").onchange = (e) => showDebug(e.target.checked);
 
 function showVoice(on) {
   voiceOn = on;
   saveData("voice", on);
-  $("voiceBtn").classList.toggle("on", on);
-  $("voiceBtn").querySelector(".icon").textContent = on ? "🔊" : "🔇";
+  $("voiceBox").checked = on;
+  $("voiceBtn").setAttribute("aria-pressed", String(on));
+  $("voiceBtn").querySelector("use").setAttribute("href", on ? "#i-sound" : "#i-mute");
   if (!on && "speechSynthesis" in window) speechSynthesis.cancel();
 }
 $("voiceBtn").onclick = () => showVoice(!voiceOn);
+$("voiceBox").onchange = (e) => showVoice(e.target.checked);
 
 function showKnuckles(on) {
   knuckles = on;
   saveData("knuckles", on);
-  $("knuckleBtn").textContent = `${on ? "☑" : "☐"} Knuckles`;
-  $("knuckleBtn").classList.toggle("on", on);
+  $("knuckleBtn").setAttribute("aria-pressed", String(on));
 }
 $("knuckleBtn").onclick = () => showKnuckles(!knuckles);
 
@@ -751,23 +1051,27 @@ function setStatus(text, isError = false) {
   statusEl.classList.toggle("bad", isError);
 }
 
+// The small message under the top bar (camera advice)
 let lastHint = "";
 function setHint(text, kind) {
   const key = kind + text;
   if (key === lastHint) return;
   lastHint = key;
   hintEl.textContent = text;
-  hintEl.className = kind;
+  hintEl.dataset.kind = kind;
   hintEl.hidden = !text;
 }
 
-let flashTimer = null;
-function flash(text, kind) {
-  flashEl.textContent = text;
-  flashEl.className = kind;
-  flashEl.hidden = false;
-  clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => { flashEl.hidden = true; }, 1300);
+// The red message when a rep doesn't count
+let toastTimer = null;
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.hidden = false;
+  toastEl.classList.remove("show");
+  void toastEl.offsetWidth;   // restart the entrance animation
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.hidden = true; }, 1900);
 }
 
 function say(text) {
@@ -811,7 +1115,7 @@ async function loadTracker(useGpu) {
 }
 
 loadTracker(true).then(
-  () => { if (!stream) setStatus("Ready. Tap Start camera."); },
+  () => { if (!stream) setStatus("Ready when you are."); },
   (err) => {
     console.error(err);
     trackerError = "Couldn't load the body tracker. Check your internet connection and reload the page.";
@@ -832,7 +1136,7 @@ async function startCamera() {
     return;
   }
   $("startBtn").disabled = true;
-  setStatus("Starting camera…");
+  setStatus("Starting the camera…");
   if (stream) stream.getTracks().forEach((t) => t.stop());
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -843,11 +1147,11 @@ async function startCamera() {
     stream = null;
     $("startBtn").disabled = false;
     const reasons = {
-      NotAllowedError: "Camera permission was blocked. Allow the camera for this website in your browser settings, then reload the page.",
-      NotFoundError: "No camera was found on this device.",
+      NotAllowedError: "Camera access is blocked. Allow the camera for this website in your browser settings, then reload the page.",
+      NotFoundError: "This device has no camera the app can use.",
       NotReadableError: "Another app is using the camera. Close it and try again.",
     };
-    setStatus(reasons[err.name] || `Couldn't start the camera (${err.name || err.message}).`, true);
+    setStatus(reasons[err.name] || `The camera didn't start (${err.name || err.message}).`, true);
     return;
   }
   video.srcObject = stream;
@@ -855,15 +1159,17 @@ async function startCamera() {
   const reportedFacing = stream.getVideoTracks()[0].getSettings().facingMode;
   mirrored = (reportedFacing || facing) !== "environment";
 
+  document.body.classList.add("live");
   $("start").hidden = true;
-  $("counter").hidden = false;
+  hud.hidden = false;
   $("controls").hidden = false;
   showDebug(debugOn);
   keepScreenOn();
   renderCounter();
 
   const cameras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
-  $("flipBtn").hidden = cameras.length < 2;
+  $("flipRow").hidden = cameras.length < 2;
+  $("cameraName").textContent = facing === "user" ? "Front camera" : "Back camera";
 }
 
 $("startBtn").onclick = () => {
@@ -892,10 +1198,13 @@ const leftColor = css.getPropertyValue("--left").trim();
 const rightColor = css.getPropertyValue("--right").trim();
 
 function drawLabel(text, x, y, unit, color = "#fff") {
-  ctx.font = `600 ${Math.round(15 * unit)}px system-ui, sans-serif`;
-  const w = ctx.measureText(text).width, h = 20 * unit, pad = 5 * unit;
-  ctx.fillStyle = "rgba(0,0,0,0.65)";
-  ctx.fillRect(x - w / 2 - pad, y - h / 2, w + pad * 2, h);
+  ctx.font = `600 ${Math.round(14 * unit)}px Archivo, system-ui, sans-serif`;
+  const w = ctx.measureText(text).width, h = 22 * unit, pad = 7 * unit;
+  ctx.fillStyle = "rgba(18,22,42,0.8)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w / 2 - pad, y - h / 2, w + pad * 2, h, h / 2);
+  else ctx.rect(x - w / 2 - pad, y - h / 2, w + pad * 2, h);   // older browsers: square corners
+  ctx.fill();
   ctx.fillStyle = color;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -905,6 +1214,7 @@ function drawLabel(text, x, y, unit, color = "#fff") {
 function drawLine(x1, y1, x2, y2, color, width, dash = []) {
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
+  ctx.lineCap = "round";
   ctx.setLineDash(dash);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -926,19 +1236,23 @@ function draw(points, m) {
   const Y = (i) => points[i].y * H;
   const faint = (i) => m.quality !== null && points[i].visibility < SETTINGS.minVisibility;
 
-  // Bones (skip the face points 0–10)
+  // Bones (skip the face points 0–10), with a soft dark edge so they show on any background
   for (const { start, end } of PoseLandmarker.POSE_CONNECTIONS) {
     if (start < 11 || end < 11) continue;
-    const color = faint(start) || faint(end) ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.9)";
-    drawLine(X(start), Y(start), X(end), Y(end), color, 4 * unit);
+    const dim = faint(start) || faint(end);
+    drawLine(X(start), Y(start), X(end), Y(end), dim ? "rgba(18,22,42,0.15)" : "rgba(18,22,42,0.35)", 7 * unit);
+    drawLine(X(start), Y(start), X(end), Y(end), dim ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.92)", 3.5 * unit);
   }
-  // Joints: blue = person's left side, orange = right side
+  // Joints: periwinkle = person's left side, apricot = right side
   for (let i = 11; i < 33; i++) {
     ctx.globalAlpha = faint(i) ? 0.35 : 1;
-    ctx.fillStyle = i % 2 ? leftColor : rightColor;
     ctx.beginPath();
     ctx.arc(X(i), Y(i), 6 * unit, 0, Math.PI * 2);
+    ctx.fillStyle = i % 2 ? leftColor : rightColor;
     ctx.fill();
+    ctx.lineWidth = 1.5 * unit;
+    ctx.strokeStyle = "#fff";
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 
@@ -948,8 +1262,8 @@ function draw(points, m) {
   if (counter.top) {
     const handY = Math.max(Y(BODY.lWrist), Y(BODY.rWrist));
     const targetY = handY - counter.top.height * (1 - SETTINGS.bottomDrop);
-    drawLine(0, targetY, W, targetY, "rgba(248,113,113,0.8)", 2 * unit, [12 * unit, 10 * unit]);
-    drawLabel("shoulder depth line", W / 2, targetY - 14 * unit, unit, "#f87171");
+    drawLine(0, targetY, W, targetY, "rgba(140,155,255,0.9)", 2 * unit, [12 * unit, 10 * unit]);
+    drawLabel("Depth line", W / 2, targetY - 16 * unit, unit, "#8c9bff");
   }
 
   // Body line (only meaningful when the camera is at a slant or side)
@@ -958,22 +1272,74 @@ function draw(points, m) {
     const sx = (X(BODY.lShoulder) + X(BODY.rShoulder)) / 2, sy = (Y(BODY.lShoulder) + Y(BODY.rShoulder)) / 2;
     const hx = (X(BODY.lHip) + X(BODY.rHip)) / 2, hy = (Y(BODY.lHip) + Y(BODY.rHip)) / 2;
     const fx = (X(footL) + X(footR)) / 2, fy = (Y(footL) + Y(footR)) / 2;
-    drawLine(sx, sy, fx, fy, "rgba(250,204,21,0.9)", 3 * unit, [10 * unit, 8 * unit]);
-    drawLabel(`hip ${signed(m.hipLine)}`, hx, hy - 22 * unit, unit, "#facc15");
+    drawLine(sx, sy, fx, fy, "rgba(245,184,61,0.9)", 3 * unit, [10 * unit, 8 * unit]);
+    drawLabel(`Hip ${signed(m.hipLine)}`, hx, hy - 22 * unit, unit, "#f5b83d");
   }
 
   // Hand gap: line between wrists
-  drawLine(X(BODY.lWrist), Y(BODY.lWrist), X(BODY.rWrist), Y(BODY.rWrist), "rgba(74,222,128,0.9)", 3 * unit, [6 * unit, 6 * unit]);
-  drawLabel(`gap ${m.handGap.toFixed(2)}×`,
-    (X(BODY.lWrist) + X(BODY.rWrist)) / 2, (Y(BODY.lWrist) + Y(BODY.rWrist)) / 2 + 24 * unit, unit, "#4ade80");
+  drawLine(X(BODY.lWrist), Y(BODY.lWrist), X(BODY.rWrist), Y(BODY.rWrist), "rgba(255,255,255,0.75)", 2 * unit, [6 * unit, 6 * unit]);
+  drawLabel(`Gap ${m.handGap.toFixed(2)}×`,
+    (X(BODY.lWrist) + X(BODY.rWrist)) / 2, (Y(BODY.lWrist) + Y(BODY.rWrist)) / 2 + 26 * unit, unit);
 
   // Elbow angles
-  drawLabel(`L ${Math.round(m.elbowL)}°`, X(BODY.lElbow), Y(BODY.lElbow) - 22 * unit, unit, leftColor);
-  drawLabel(`R ${Math.round(m.elbowR)}°`, X(BODY.rElbow), Y(BODY.rElbow) - 22 * unit, unit, rightColor);
+  drawLabel(`L ${Math.round(m.elbowL)}°`, X(BODY.lElbow), Y(BODY.lElbow) - 24 * unit, unit, leftColor);
+  drawLabel(`R ${Math.round(m.elbowR)}°`, X(BODY.rElbow), Y(BODY.rElbow) - 24 * unit, unit, rightColor);
 }
 
 // ================================================================
-// 12. DEBUG PANEL
+// 12. THE DEPTH GAUGE
+// Both halves of the arc sweep up as you go down, and turn blue once you're deep enough.
+// ================================================================
+(function drawGaugeTicks() {
+  const g = $("gaugeTicks"), lt = $("levelTicks");
+  let marks = "";
+  for (let k = 0; k <= 24; k++) {
+    const a = Math.PI - (k * Math.PI) / 24, major = k % 6 === 0;
+    const r1 = major ? 147 : 151, r2 = 159;
+    marks += `<line class="${major ? "major" : ""}" x1="${(160 + r1 * Math.cos(a)).toFixed(1)}" y1="${(166 - r1 * Math.sin(a)).toFixed(1)}" x2="${(160 + r2 * Math.cos(a)).toFixed(1)}" y2="${(166 - r2 * Math.sin(a)).toFixed(1)}"/>`;
+  }
+  g.innerHTML = marks;
+  // Ticks on the level-up mark, appearing one after another
+  let lmarks = "";
+  for (let k = 0; k < 9; k++) {
+    const a = ((15 + k * 7.5) * Math.PI) / 180, major = k % 4 === 0, r1 = major ? 36 : 42, r2 = 49.4;
+    lmarks += `<line x1="${(32 + r1 * Math.cos(a)).toFixed(1)}" y1="${(106 - r1 * Math.sin(a)).toFixed(1)}" x2="${(32 + r2 * Math.cos(a)).toFixed(1)}" y2="${(106 - r2 * Math.sin(a)).toFixed(1)}" stroke-width="${major ? 3 : 2}" style="animation-delay:${700 + k * 45}ms"/>`;
+  }
+  lt.innerHTML = lmarks;
+})();
+
+// How far through the rep you are: 0 at the top, 1 once you're deep enough.
+function depthProgress(m) {
+  if (!m || !counter.top) return 0;
+  const arm = workingArm(m, mode);
+  if (!arm) return 0;
+  const byElbow = (SETTINGS.straightArm - arm.angle) / (SETTINGS.straightArm - SETTINGS.bottomAngle);
+  const drop = counter.top.height > 0 ? 1 - m.shoulderHeight / counter.top.height : 0;
+  return Math.min(1, Math.max(0, byElbow, drop / SETTINGS.bottomDrop));
+}
+
+function reachedDepth() {
+  const r = counter.rep;
+  if (!r) return false;
+  const lowest = mode === "oneArm" ? r.lowestOne : r.lowestBoth;
+  return lowest <= SETTINGS.bottomAngle || r.deepest >= SETTINGS.bottomDrop;
+}
+
+let shownDepth = 0;
+function updateGauge(m) {
+  shownDepth += (depthProgress(m) - shownDepth) * 0.6;
+  const reached = reachedDepth();
+  const amount = reached ? 100 : Math.round(shownDepth * 100);
+  for (const id of ["gaugeLeft", "gaugeRight"]) {
+    $(id).style.strokeDasharray = `${amount} 100`;
+    $(id).style.opacity = amount > 1 ? 1 : 0;   // a rounded line of length 0 still draws a dot
+  }
+  hud.classList.toggle("reached", reached);
+  hud.classList.toggle("idle", !m || counter.phase === "waiting");
+}
+
+// ================================================================
+// 13. MEASUREMENTS PANEL (debug)
 // ================================================================
 let fps = 0;
 let lastPanelUpdate = 0;
@@ -1032,7 +1398,7 @@ $("copyBtn").onclick = async () => {
   const text = lines.join("\n");
   try {
     await navigator.clipboard.writeText(text);
-    $("copyBtn").textContent = "Copied!";
+    $("copyBtn").textContent = "Copied";
     setTimeout(() => { $("copyBtn").textContent = "Copy numbers"; }, 1500);
   } catch {
     window.prompt("Copy these numbers:", text);
@@ -1040,11 +1406,10 @@ $("copyBtn").onclick = async () => {
 };
 
 // ================================================================
-// 13. WORKOUT: SETS, FEEDBACK AND THE COUNTER
+// 14. WORKOUT: SETS, FEEDBACK AND THE COUNTER
 // ================================================================
 const counter = newRepCounter();
 let set = null;            // the set in progress
-let warning = { text: "", until: 0 };
 let restTimer = null;
 
 function startSet(now) {
@@ -1054,10 +1419,17 @@ function startSet(now) {
   $("finishBtn").disabled = false;
 }
 
+function bumpCount() {
+  const el = $("countBig");
+  el.classList.remove("bump");
+  void el.offsetWidth;   // restart the animation
+  el.classList.add("bump");
+}
+
 function handleEvent(event, now) {
   if (event.type === "warning") {
     const text = BAD_REASONS[event.reason].short;
-    warning = { text, until: now + 2000 };
+    showToast(text);
     say(text);
     return;
   }
@@ -1068,25 +1440,37 @@ function handleEvent(event, now) {
   if (repLog.length > 10) repLog.shift();
   if (rep.counted) {
     set.good[rep.key] = (set.good[rep.key] || 0) + 1;
-    const n = totalGood(set);
-    flash(`✓ ${n}`, "good");
-    say(String(n));
+    say(String(totalGood(set)));
+    renderCounter();
+    bumpCount();
   } else {
     set.bad[rep.reason] = (set.bad[rep.reason] || 0) + 1;
-    flash(BAD_REASONS[rep.reason].long, "bad");
+    showToast(BAD_REASONS[rep.reason].long);
     say(BAD_REASONS[rep.reason].short);
+    renderCounter();
   }
-  renderCounter();
 }
 
 function describeGood(s) {
   const parts = Object.entries(s.good).map(([k, n]) => `${keyName(k)} ${n}`);
-  return (parts.join(", ") || "no good reps") + (s.knuckles ? " · knuckles" : "");
+  return (parts.join(", ") || "No good reps") + (s.knuckles ? ", on knuckles" : "");
 }
 
 function describeBad(s) {
   const parts = Object.entries(s.bad).map(([reason, n]) => `${n} ${BAD_REASONS[reason].plural}`);
   return parts.length ? `Not counted: ${parts.join(", ")}` : "";
+}
+
+// "Regular" for a set of one type; "Regular 9, Wide 2" when mixed
+function setTypes(s) {
+  const types = Object.entries(s.good);
+  const label = types.length === 1 ? keyName(types[0][0])
+    : types.map(([k, n]) => `${keyName(k)} ${n}`).join(", ") || "No good reps";
+  return label + (s.knuckles ? ", on knuckles" : "");
+}
+
+function setDots(done, total) {
+  return Array.from({ length: total }, (_, i) => `<span class="dot${i < done ? " on" : ""}"></span>`).join("");
 }
 
 function finishSet() {
@@ -1108,46 +1492,57 @@ function finishSet() {
   let progress = "";
   let levelledUp = null;
   if (step) {
-    const done = qualifyingSets(workout, step);
+    const done = Math.min(qualifyingSets(workout, step), step.sets);
     const need = `${step.reps}${step.perSide ? " per side" : ""}`;
-    progress = repsForStep(record, step) >= step.reps
-      ? `<p class="good">Counts toward level ${level + 1}: ${Math.min(done, step.sets)} of ${step.sets} sets of ${need} ${step.name.toLowerCase()}s done.</p>`
-      : `<p class="muted">Level ${level + 1} needs sets of ${need} ${step.name.toLowerCase()}s. This one had ${repsForStep(record, step)}.</p>`;
-    if (done >= step.sets) {
+    const counted = repsForStep(record, step) >= step.reps;
+    const line = counted
+      ? `${done} of ${step.sets} sets toward level ${level + 2 <= LADDER.length ? level + 2 : "complete"}`
+      : `Level ${level + 1} needs ${need} ${step.name.toLowerCase()}s in a set. This one had ${repsForStep(record, step)}.`;
+    progress = `<div class="set-progress"><p class="set-note">${line}</p><div class="sets-dots">${setDots(done, step.sets)}</div></div>`;
+    if (qualifyingSets(workout, step) >= step.sets) {
       level += 1;
       saveData("level", level);
       levelledUp = { from: step, to: LADDER[level] };
     }
   }
 
+  const good = totalGood(record);
   $("setTitle").textContent = `Set ${workout.length} done`;
   $("setBody").innerHTML = `
-    <p class="big">${totalGood(record)} <span class="muted" style="font-size:16px;font-weight:400">${goodReps(totalGood(record)).replace(/^\d+ /, "")}</span></p>
-    <p>${describeGood(record)}</p>
-    ${describeBad(record) ? `<p class="bad">${describeBad(record)}</p>` : ""}
+    <p class="set-count"><b>${good}</b><span>${goodReps(good).replace(/^\d+ /, "")}</span></p>
+    <p class="set-types">${setTypes(record)}</p>
+    ${describeBad(record) ? `<p class="set-bad">${describeBad(record)}</p>` : ""}
     ${progress}`;
   const restStart = Date.now();
   const tick = () => {
     const s = Math.floor((Date.now() - restStart) / 1000);
-    $("restTimer").textContent = `Resting: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}. Start your next set whenever you're ready.`;
+    $("restTimer").textContent = `Rest ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   };
   tick();
   clearInterval(restTimer);
   restTimer = setInterval(tick, 1000);
   $("setCard").hidden = false;
-  say(`Set done. ${goodReps(totalGood(record))}.`);
+  say(`Set done. ${goodReps(good)}.`);
 
   if (levelledUp) showLevelUp(levelledUp);
   renderCounter();
+  renderHome();
 }
 
 function showLevelUp({ from, to }) {
-  $("levelBody").innerHTML = to
-    ? `<p>You finished <b>${from.name}s</b>.</p><p>Unlocked level ${level + 1}: <b>${to.name}</b></p><p class="muted">${to.how}</p>`
-    : `<p>You finished the whole ladder with <b>${from.name}s</b>. Amazing!</p>`;
-  $("levelCard").hidden = false;
+  $("levelTitle").textContent = to ? `Level ${level + 1} unlocked` : "Ladder complete";
+  $("levelNext").textContent = to ? to.name : `You finished every level, ending with ${from.name.toLowerCase()}s.`;
+  $("levelHow").textContent = to ? to.how : "";
+  // Replay the drawing animation
+  const card = $("levelCard");
+  card.hidden = false;
+  card.querySelectorAll(".draw, .ticks line").forEach((el) => {
+    el.style.animationName = "none";
+    void el.getBoundingClientRect();
+    el.style.animationName = "";
+  });
   useLevelMode();
-  setTimeout(() => say(to ? `Level up! Next: ${to.name}` : "You finished the whole ladder!"), 1800);
+  setTimeout(() => say(to ? `Level up! Next: ${to.name}` : "You finished the whole ladder!"), 1200);
 }
 
 $("finishBtn").onclick = finishSet;
@@ -1157,100 +1552,134 @@ $("levelOkBtn").onclick = () => { $("levelCard").hidden = true; };
 function renderCounter() {
   $("countBig").textContent = set ? totalGood(set) : 0;
   const parts = set ? Object.entries(set.good).map(([k, n]) => `${keyName(k)} ${n}`) : [];
-  $("countType").textContent = parts.join(" · ") || (mode === "auto" ? "Ready" : TYPE_NAMES[mode]);
+  $("countType").textContent = parts.join(", ") || (mode === "auto" ? "Ready" : TYPE_NAMES[mode]);
   const step = LADDER[level];
   if (step) {
     const done = qualifyingSets(currentWorkout(history, Date.now()), step);
-    $("countGoal").textContent = `Goal ${step.reps}${step.perSide ? "/side" : ""} · ${done}/${step.sets} sets`;
+    $("countGoal").textContent = `Goal ${step.reps}${step.perSide ? " per side" : ""}, set ${Math.min(done + 1, step.sets)} of ${step.sets}`;
   } else {
-    $("countGoal").textContent = "Ladder complete 🏆";
+    $("countGoal").textContent = "Ladder complete";
   }
 }
 
-// The message at the bottom of the screen
-function updateHint(m, now) {
-  if (!tracker) return setHint(trackerError || "Loading body tracker…", trackerError ? "bad" : "warn");
-  if (now < warning.until) return setHint(warning.text, "bad");
-  if (!m) return setHint("I can't see you. Put the phone on the floor in front of your hands, facing you.", "bad");
+// The start screen: your level and what unlocks the next one
+function renderHome() {
+  const step = LADDER[level];
+  if (!step) {
+    $("homeLevel").textContent = `All ${LADDER.length} levels done`;
+    $("homeTitle").textContent = "Ladder complete";
+    $("homeGoal").textContent = "Keep training any push-up you like. Every good rep still counts.";
+    $("homeDots").innerHTML = "";
+    return;
+  }
+  const done = Math.min(qualifyingSets(currentWorkout(history, Date.now()), step), step.sets);
+  const need = `${step.sets} sets of ${step.reps}${step.perSide ? " per side" : ""}`;
+  $("homeLevel").textContent = `Level ${level + 1} of ${LADDER.length}`;
+  $("homeTitle").textContent = step.name;
+  $("homeGoal").textContent = level + 1 < LADDER.length
+    ? `Do ${need} in one workout to unlock level ${level + 2}.`
+    : `Do ${need} in one workout to finish the ladder.`;
+  $("homeDots").innerHTML = `${setDots(done, step.sets)}<span>${done ? `${done} of ${step.sets} done in this workout` : "No sets yet in this workout"}</span>`;
+}
+
+// The message under the top bar
+function updateHint(m) {
+  if (!tracker) return setHint(trackerError || "Loading the body tracker…", trackerError ? "bad" : "warn");
+  if (!m) return setHint("Can't see you yet. Stand the phone up in front of your hands, facing you.", "bad");
   if (!m.shouldersSeen || !(m.leftArmSeen || m.rightArmSeen)) {
-    return setHint("Move the phone back a little so I can see your hands and shoulders.", "bad");
+    return setHint("Move the phone back a little so your hands and shoulders fit.", "bad");
   }
   if (!inPushupPosition(m)) {
-    return setHint(set ? "Resting. Get back into position to keep going." : "Get into push-up position with your arms straight.", "");
+    return setHint(set ? "Resting. Get back into position to keep going." : "Get into push-up position, arms straight.", "");
   }
-  if (mode !== "oneArm" && !m.bothHandsSeen) return setHint("I can only see one hand. Move the phone back a little.", "warn");
-  if (counter.view === "side") return setHint("The camera is looking at your side. Turn it to face your head.", "warn");
+  if (mode !== "oneArm" && !m.bothHandsSeen) return setHint("Only one hand is in view. Move the phone back a little.", "warn");
+  if (counter.view === "side") return setHint("The camera sees your side. Turn it to face your head.", "warn");
   if (counter.phase === "waiting") return setHint("Straighten your arms to start.", "");
-  if (counter.phase === "top" && !set) return setHint("Ready! Start your push-ups.", "good");
+  if (counter.phase === "top" && !set) return setHint("Ready. Start whenever you like.", "good");
   setHint("", "");
 }
 
 // ================================================================
-// 14. LADDER AND HISTORY SCREENS
+// 15. LADDER, HISTORY AND SETTINGS SCREENS
 // ================================================================
 function renderLadder() {
   const today = currentWorkout(history, Date.now());
+  // Hardest at the top, like a real ladder
   $("ladderList").innerHTML = LADDER.map((step, i) => {
     const status = i < level ? "done" : i === level ? "current" : "locked";
-    const badge = { done: "✅", current: "▶️", locked: "🔒" }[status];
     const target = `${step.sets} sets of ${step.reps}${step.perSide ? " per side" : ""}`;
-    const progress = status === "current" ? `<p class="good">This workout: ${qualifyingSets(today, step)} of ${step.sets} sets done</p>` : "";
-    const button = status === "current" ? "" : `<button data-level="${i}">Start from here</button>`;
-    return `<div class="step ${status}">
-      <p><b>${badge} ${i + 1}. ${step.name}</b></p>
-      <p class="muted">${step.how}</p>
-      <p>To unlock the next level: ${target}</p>
-      ${progress}${button}
-    </div>`;
-  }).join("") + (level >= LADDER.length ? "<p class='good'><b>🏆 You've completed the whole ladder!</b></p>" : "");
+    const done = Math.min(qualifyingSets(today, step), step.sets);
+    const extra = status === "current"
+      ? `<div class="sets-dots">${setDots(done, step.sets)}<span>${done} of ${step.sets} sets in this workout</span></div>`
+      : `<button class="text-btn quiet" data-level="${i}">Start from here</button>`;
+    const node = status === "done" ? `<svg class="icon"><use href="#i-check"/></svg>` : "";
+    return `<li class="rung ${status}"${status === "current" ? ' aria-current="step"' : ""}>
+      <span class="node" aria-hidden="true">${node}</span>
+      <div class="rung-body">
+        <div class="rung-head"><span class="rung-num">${i + 1}</span><h3>${step.name}</h3></div>
+        <p class="rung-how">${step.how}</p>
+        <p class="rung-target">${target} to unlock the next level</p>
+        ${extra}
+      </div>
+    </li>`;
+  }).reverse().join("");
 }
 
 $("ladderList").onclick = (e) => {
-  const i = e.target.dataset?.level;
+  const i = e.target.closest("[data-level]")?.dataset.level;
   if (i === undefined) return;
   const step = LADDER[+i];
-  if (!window.confirm(`Move to level ${+i + 1}: ${step.name}?`)) return;
+  if (!window.confirm(`Move to level ${+i + 1}, ${step.name.toLowerCase()}?`)) return;
   if (set) finishSet();
   level = +i;
   saveData("level", level);
   useLevelMode();
   renderLadder();
   renderCounter();
+  renderHome();
 };
 
 function renderHistory() {
   $("storageWarning").hidden = storageWorks;
   if (!history.length) {
-    $("historyList").innerHTML = "<p class='muted'>No workouts yet. Finish a set and it will show up here.</p>";
+    $("historyList").innerHTML = "<p class='empty'>No sets yet. Finish one and it shows up here.</p>";
     $("clearHistoryBtn").hidden = true;
     return;
   }
   $("clearHistoryBtn").hidden = false;
   $("historyList").innerHTML = groupWorkouts(history).reverse().map((sets) => {
-    const when = new Date(sets[0].time).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const when = new Date(sets[0].time).toLocaleString([], { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     const total = sets.reduce((n, s) => n + totalGood(s), 0);
+    const most = Math.max(1, ...sets.map(totalGood));
     const rows = sets.map((s) => {
       const bad = describeBad(s);
-      return `<li>${describeGood(s)}${bad ? ` <span class="muted">(${bad.toLowerCase()})</span>` : ""}</li>`;
+      return `<li class="set-row">
+        <span class="set-bar"><i style="width:${(totalGood(s) / most) * 100}%"></i></span>
+        <span class="set-reps">${totalGood(s)}</span>
+        <span class="set-detail">${setTypes(s)}${bad ? `. ${bad}` : ""}</span>
+      </li>`;
     }).join("");
-    return `<div class="workout">
-      <div class="workoutHead"><b>${when}</b><span class="good">${goodReps(total)}</span></div>
-      <ol>${rows}</ol>
-    </div>`;
+    return `<section class="workout">
+      <div class="workout-head"><h3>${when}</h3><span class="workout-total"><b>${total}</b>good reps</span></div>
+      <ol class="set-rows">${rows}</ol>
+    </section>`;
   }).join("");
 }
 
 $("clearHistoryBtn").onclick = () => {
-  if (!window.confirm("Delete all your workout history? This can't be undone. (Your ladder level stays.)")) return;
+  if (!window.confirm("Delete all your workout history? This can't be undone. Your ladder level stays.")) return;
   history = [];
   saveData("history", history);
   renderHistory();
   renderCounter();
+  renderHome();
 };
 
 function openSheet(id, render) {
   render();
-  $(id).hidden = false;
+  document.querySelectorAll(".sheet").forEach((s) => { s.hidden = s.id !== id; });
+  $(id).scrollTop = 0;
+  if (id === "ladderSheet") $(id).querySelector('[aria-current="step"]')?.scrollIntoView({ block: "center" });
 }
 $("ladderBtn").onclick = () => openSheet("ladderSheet", renderLadder);
 $("historyBtn").onclick = () => openSheet("historySheet", renderHistory);
@@ -1260,7 +1689,7 @@ document.querySelectorAll("[data-close]").forEach((b) => {
 });
 
 // ================================================================
-// 15. MAIN LOOP: one pass per camera frame
+// 16. MAIN LOOP: one pass per camera frame
 // ================================================================
 let lastVideoTime = -1;
 let framesThisSecond = 0, secondStart = performance.now();
@@ -1314,7 +1743,8 @@ function frame() {
   }
 
   draw(points, steady);
-  updateHint(steady, now);
+  updateGauge(tracker ? steady : null);
+  updateHint(steady);
   updateDebugPanel(steady, now);
 
   framesThisSecond++;
@@ -1329,6 +1759,7 @@ useLevelMode();
 showDebug(debugOn);
 showVoice(voiceOn);
 showKnuckles(knuckles);
+renderHome();
 requestAnimationFrame(frame);
 </script>
 </body>

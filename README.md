@@ -14,13 +14,17 @@ Everything runs inside your browser. Your video never leaves your device.
 - Tap **Start camera**, then tap **Allow** when the browser asks about the camera.
 - The first load downloads about 20 MB (the body tracker), so use Wi-Fi if you can.
 
+**Put it on your home screen** so it opens full-screen like a normal app, with its own icon:
+- **iPhone (Safari):** tap the Share button, then **Add to Home Screen**.
+- **Android (Chrome):** tap the ⋮ menu, then **Add to Home screen**.
+
 ## Camera setup (front view)
 
 1. Stand your phone **upright** on the floor, about a forearm's length in front of where your hands will go, with the **screen facing you**.
 2. Lean it against something (a shoe, a water bottle) or use a phone stand.
 3. Both hands, both arms and your shoulders must be on screen. Your head being cut off at the top is fine.
 
-Because the screen faces you, you can watch your count while you do push-ups. The app also says each count out loud (tap **Voice** to turn that off).
+Because the screen faces you, you can watch your count while you do push-ups. The app also says each count out loud. Tap the speaker icon at the top to turn that off.
 
 ## How a rep is counted
 
@@ -29,6 +33,8 @@ Because the screen faces you, you can watch your count while you do push-ups. Th
 3. Come back up until your **arms are straight** again.
 
 Half reps don't count. You'll see and hear "Go lower".
+
+**The depth gauge:** the arc around your count shows how low you are. Both sides sweep up as you go down, and the whole arc turns blue once you're deep enough. If it's blue when you push back up, the rep counts.
 
 ## Sets and the ladder
 
@@ -68,20 +74,23 @@ When your ladder level needs one of these, the Exercise menu switches to it auto
 
 ## Settings
 
-Tap **Settings** (the gear icon on a phone):
+Tap the settings icon (the sliders) at the top:
 - **Count knee push-ups**: on (the default) means knee push-ups count and show as "Knee". Off means they show "Not counted: knee push-up".
+- **Say counts out loud**: the same as the speaker icon.
+- **Show measurements**: live angles and numbers on the camera, plus **Copy numbers** (see Measurements below).
+- **Camera**: switch between the front and back camera (only shown if your phone has both).
 
 ## Honest limits
 
-- **Knee push-up detection depends on where the phone is.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. With the phone in its usual spot, 3 regular and 3 knee push-ups were all labelled correctly. In earlier tests with the phone placed a little differently, regular and knee push-ups weren't told apart. Keep the phone in the same spot each time. If a rep gets the wrong label, use Copy numbers (see Debug mode) so the cut-offs can be adjusted.
+- **Knee push-up detection depends on where the phone is.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. With the phone in its usual spot, 3 regular and 3 knee push-ups were all labelled correctly. In earlier tests with the phone placed a little differently, regular and knee push-ups weren't told apart. Keep the phone in the same spot each time. If a rep gets the wrong label, use Copy numbers (see Measurements) so the cut-offs can be adjusted.
 
 - **Hip sagging and hips too high are not checked from the front.** From the front, your hips are hidden behind your shoulders and the tracker can only guess where they are. Workaround: if you want hip checks, put the phone at a **slant** (halfway between facing your head and facing your side, about 2 m away, whole body in view). The app notices the slanted camera and turns hip checks on automatically.
-- **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Debug mode).
-- **Slow phones:** if Speed in debug mode drops below about 8 frames per second, very fast reps can be missed. Switching to the `lite` model helps (see Changing settings).
+- **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Measurements).
+- **Slow phones:** if Speed in the measurements drops below about 8 frames per second, very fast reps can be missed. Switching to the `lite` model helps (see Changing settings).
 
-## Debug mode
+## Measurements
 
-Tap **Debug** (the bug icon on a phone) to show or hide live numbers. Tap **Copy numbers** to copy them along with your last 10 reps, then paste them into a chat when something is detected wrong.
+Turn on **Show measurements** in Settings to see live numbers on the camera. Tap **Copy numbers** to copy them along with your last 10 reps, then paste them into a chat when something is detected wrong.
 
 | Number | What it means |
 |---|---|
@@ -100,8 +109,8 @@ Tap **Debug** (the bug icon on a phone) to show or hide live numbers. Tap **Copy
 
 On the camera picture:
 - **Blue dots** = your left side, **orange dots** = your right side.
-- **Red dashed line** = the shoulder depth line. Get your shoulders down to it.
-- **Green dashed line** = the gap between your wrists.
+- **Blue dashed line** = the depth line. Get your shoulders down to it.
+- **White dashed line** = the gap between your wrists.
 
 ## Changing settings
 
@@ -111,8 +120,12 @@ The numbers the app uses to make decisions are at the top of `index.html`, in th
 
 - **"Camera permission was blocked"**: tap the icon to the left of the web address (a lock or "aA"), allow the camera, then reload the page.
 - **"Couldn't load the body tracker"**: check your internet connection and reload.
-- **Reps aren't counting**: turn on Debug and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 55%.
+- **Reps aren't counting**: turn on Show measurements in Settings and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 55%.
 - **Skeleton jumps around or disappears**: add more light, and make sure both hands and shoulders are on screen.
+
+## Design
+
+The look of the app (colours, font, layout rules) is written down in [DESIGN.md](DESIGN.md), so future screens stay consistent. The app icon is `icon.png`.
 
 ## Planned for later
 
