@@ -73,7 +73,7 @@ Tap **Settings** (the gear icon on a phone):
 
 ## Honest limits
 
-- **Knee push-up detection is a first guess.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. In testing, regular push-ups showed knees about 0.75 down the screen and about 160° straight. Knee push-ups are expected to be lower on screen or more bent, but they haven't been tested yet. The cut-offs are set cautiously so regular push-ups aren't wrongly rejected, which means some knee push-ups may still slip through.
+- **Knee push-up detection depends on where the phone is.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. With the phone in its usual spot, 3 regular and 3 knee push-ups were all labelled correctly. In earlier tests with the phone placed a little differently, regular and knee push-ups weren't told apart. Keep the phone in the same spot each time. If a rep gets the wrong label, use Copy numbers (see Debug mode) so the cut-offs can be adjusted.
 
 - **Hip sagging and hips too high are not checked from the front.** From the front, your hips are hidden behind your shoulders and the tracker can only guess where they are. Workaround: if you want hip checks, put the phone at a **slant** (halfway between facing your head and facing your side, about 2 m away, whole body in view). The app notices the slanted camera and turns hip checks on automatically.
 - **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Debug mode).
