@@ -228,6 +228,10 @@
   .status { margin-top: 12px; min-height: 1.45em; font-size: 15px; color: var(--graphite); }
   .status.bad { color: var(--signal); }
   .fine-print { margin-top: 6px; font-size: 14px; color: var(--graphite); }
+  .start-alt { display: block; margin: 12px auto 4px; }
+  .ladder-test { margin: -10px 0 22px; text-align: left; }
+  .set-sheet .text-btn { justify-self: center; margin-top: 6px; }
+  .levelup .results { font-size: 15px; font-variant-numeric: tabular-nums; }
 
   /* ---------- Full-screen sheets: ladder, history, settings ---------- */
   .sheet {
@@ -441,7 +445,7 @@
 
 <footer id="controls" class="dock" hidden>
   <label class="picker">
-    <span class="picker-label">Exercise</span>
+    <span class="picker-label" id="pickerLabel">Exercise</span>
     <select id="modeSelect">
       <option value="auto">Auto-detect</option>
       <option value="incline">Incline</option>
@@ -489,6 +493,7 @@
     </ol>
 
     <button id="startBtn" class="primary">Start camera</button>
+    <button id="altStartBtn" class="text-btn quiet start-alt"></button>
     <p id="status" class="status" role="status">Loading the body tracker…</p>
     <p class="fine-print">Your video stays on this phone. Nothing is uploaded.</p>
   </div>
@@ -501,6 +506,7 @@
       <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
     </div>
     <p class="sheet-intro">Do the target in one workout to unlock the next level. Only good reps of that push-up count.</p>
+    <button id="ladderTestBtn" class="text-btn ladder-test">Not sure where you belong? Take the level test</button>
     <ol id="ladderList" class="rail"></ol>
   </div>
 </section>
@@ -550,6 +556,7 @@
     <div class="set-head"><h2 id="setTitle"></h2><span id="restTimer" class="rest num"></span></div>
     <div id="setBody"></div>
     <button id="setOkBtn" class="secondary">Close</button>
+    <button id="setAltBtn" class="text-btn quiet" hidden></button>
   </div>
 </section>
 
@@ -563,6 +570,7 @@
     <h2 id="levelTitle"></h2>
     <p id="levelNext" class="next"></p>
     <p id="levelHow" class="how"></p>
+    <p id="levelResults" class="how results"></p>
     <button id="levelOkBtn">Got it</button>
   </div>
 </section>
@@ -958,6 +966,39 @@ const totalGood = (set) => Object.values(set.good).reduce((a, b) => a + b, 0);
 const goodReps = (n) => `${n} good rep${n === 1 ? "" : "s"}`;
 const totalBad = (set) => Object.values(set.bad).reduce((a, b) => a + b, 0);
 
+// The level test: up to three sets of as many good reps as you can in a row.
+// A strong result moves you on to a harder part; otherwise you start at the level it points to.
+// (Levels count from 0 here, so level: 0 means level 1, Incline.)
+const LEVEL_TEST = [
+  { id: "regular", name: "Regular push-ups", short: "regular", keys: ["regular", "wide"],
+    how: "Hands on the floor, a bit wider than your shoulders.",
+    bands: [{ below: 5, level: 0 }, { below: 20, level: 1 }], passLevel: 2 },
+  { id: "diamond", name: "Diamond push-ups", short: "diamond", keys: ["diamond"],
+    how: "Hands together under your chest, thumbs and first fingers making a diamond.",
+    bands: [{ below: 15, level: 2 }], passLevel: 3 },
+  { id: "archer", name: "Archer push-ups", short: "archer", keys: ["archer-left", "archer-right"], perSide: true,
+    how: "Hands very wide. Bend one arm while the other stays straight, and alternate sides. Your weaker side counts.",
+    bands: [{ below: 6, level: 3 }, { below: 12, level: 4 }], passLevel: 5 },
+];
+
+// Good reps in a set that count for this part of the test (per-side parts count your weaker side)
+function testReps(part, set) {
+  const counts = part.keys.map((k) => set.good[k] || 0);
+  return part.perSide ? Math.min(...counts) : counts.reduce((a, b) => a + b, 0);
+}
+
+// Feed one finished set into the test. Either the test is over (with your starting level),
+// or it moves on to the next part and says where you'd start if you stopped now.
+function levelTestStep(state, set) {
+  const part = LEVEL_TEST[state.step];
+  const reps = testReps(part, set);
+  const results = [...state.results, { id: part.id, reps }];
+  const band = part.bands.find((b) => reps < b.below);
+  if (band) return { done: true, level: band.level, results };
+  if (state.step + 1 >= LEVEL_TEST.length) return { done: true, level: part.passLevel, results };
+  return { done: false, step: state.step + 1, results, stopLevel: part.passLevel };
+}
+
 // ================================================================
 // 7. SAVED HISTORY (kept in this browser on this device)
 // ================================================================
@@ -1001,6 +1042,8 @@ let debugOn = loadData("debug", false);
 let voiceOn = loadData("voice", true);
 let knuckles = loadData("knuckles", false);
 let countKnees = loadData("countKnees", true);
+let placed = loadData("placed", false) || history.length > 0;   // took (or skipped) the level test
+let levelTest = null;   // while the level test runs: { step, results, stopLevel }
 let mode = "auto";
 
 $("countKneesBox").checked = countKnees;
@@ -1172,10 +1215,24 @@ async function startCamera() {
   $("cameraName").textContent = facing === "user" ? "Front camera" : "Back camera";
 }
 
-$("startBtn").onclick = () => {
-  // Phones only allow speech that starts from a tap, so "warm up" the voice now.
+// Phones only allow speech that starts from a tap, so "warm up" the voice on the first tap.
+function warmUpVoice() {
   if ("speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-  startCamera();
+}
+$("startBtn").onclick = () => {
+  warmUpVoice();
+  if (placed) startCamera();
+  else startLevelTest();
+};
+$("altStartBtn").onclick = () => {
+  if (!placed) {   // skip the test and start at level 1
+    placed = true;
+    saveData("placed", true);
+    renderHome();
+    return;
+  }
+  warmUpVoice();
+  startLevelTest();
 };
 $("flipBtn").onclick = () => {
   facing = facing === "user" ? "environment" : "user";
@@ -1440,9 +1497,17 @@ function handleEvent(event, now) {
   if (repLog.length > 10) repLog.shift();
   if (rep.counted) {
     set.good[rep.key] = (set.good[rep.key] || 0) + 1;
-    say(String(totalGood(set)));
+    const part = levelTest && LEVEL_TEST[levelTest.step];
+    if (part && !part.keys.includes(rep.key)) {
+      // In the level test, only the push-up being tested counts
+      const kind = TYPE_NAMES[rep.type].toLowerCase();
+      showToast(`That was ${/^[aeiou]/.test(kind) ? "an" : "a"} ${kind} push-up. This part only counts ${part.short} push-ups.`);
+      say(`Not ${part.short}`);
+    } else {
+      say(part?.perSide ? `${rep.side === "left" ? "Left" : "Right"} ${set.good[rep.key]}` : String(part ? testReps(part, set) : totalGood(set)));
+      bumpCount();
+    }
     renderCounter();
-    bumpCount();
   } else {
     set.bad[rep.reason] = (set.bad[rep.reason] || 0) + 1;
     showToast(BAD_REASONS[rep.reason].long);
@@ -1483,9 +1548,18 @@ function finishSet() {
   const record = {
     time: finished.time, end: Date.now(), mode: finished.mode, knuckles,
     good: finished.good, bad: finished.bad,
+    ...(levelTest ? { test: LEVEL_TEST[levelTest.step].id } : {}),
   };
   history.push(record);
   saveData("history", history);
+  if (levelTest) {
+    finishTestPart(record);
+    renderCounter();
+    renderHome();
+    return;
+  }
+  $("setOkBtn").textContent = "Close";
+  $("setAltBtn").hidden = true;
 
   const workout = currentWorkout(history, Date.now());
   const step = LADDER[level];
@@ -1513,14 +1587,7 @@ function finishSet() {
     <p class="set-types">${setTypes(record)}</p>
     ${describeBad(record) ? `<p class="set-bad">${describeBad(record)}</p>` : ""}
     ${progress}`;
-  const restStart = Date.now();
-  const tick = () => {
-    const s = Math.floor((Date.now() - restStart) / 1000);
-    $("restTimer").textContent = `Rest ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  };
-  tick();
-  clearInterval(restTimer);
-  restTimer = setInterval(tick, 1000);
+  startRestTimer();
   $("setCard").hidden = false;
   say(`Set done. ${goodReps(good)}.`);
 
@@ -1529,10 +1596,35 @@ function finishSet() {
   renderHome();
 }
 
+function startRestTimer() {
+  const restStart = Date.now();
+  const tick = () => {
+    const s = Math.floor((Date.now() - restStart) / 1000);
+    $("restTimer").textContent = `Rest ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  };
+  tick();
+  clearInterval(restTimer);
+  restTimer = setInterval(tick, 1000);
+}
+
 function showLevelUp({ from, to }) {
-  $("levelTitle").textContent = to ? `Level ${level + 1} unlocked` : "Ladder complete";
-  $("levelNext").textContent = to ? to.name : `You finished every level, ending with ${from.name.toLowerCase()}s.`;
-  $("levelHow").textContent = to ? to.how : "";
+  showTakeover(
+    to ? `Level ${level + 1} unlocked` : "Ladder complete",
+    to ? to.name : `You finished every level, ending with ${from.name.toLowerCase()}s.`,
+    to ? to.how : "", "", "Got it",
+  );
+  useLevelMode();
+  setTimeout(() => say(to ? `Level up! Next: ${to.name}` : "You finished the whole ladder!"), 1200);
+}
+
+// The full-screen blue moment (level up, or your level test result)
+function showTakeover(title, next, how, results, button) {
+  $("levelTitle").textContent = title;
+  $("levelNext").textContent = next;
+  $("levelHow").textContent = how;
+  $("levelResults").textContent = results;
+  $("levelResults").hidden = !results;
+  $("levelOkBtn").textContent = button;
   // Replay the drawing animation
   const card = $("levelCard");
   card.hidden = false;
@@ -1541,15 +1633,95 @@ function showLevelUp({ from, to }) {
     void el.getBoundingClientRect();
     el.style.animationName = "";
   });
-  useLevelMode();
-  setTimeout(() => say(to ? `Level up! Next: ${to.name}` : "You finished the whole ladder!"), 1200);
 }
+
+// ---------- The level test ----------
+function startLevelTest() {
+  if (set) finishSet();
+  levelTest = { step: 0, results: [] };
+  mode = "auto";
+  $("modeSelect").value = "auto";
+  $("modeSelect").disabled = true;
+  $("pickerLabel").textContent = "Level test";
+  $("setCard").hidden = true;
+  document.querySelectorAll(".sheet").forEach((sheet) => { sheet.hidden = true; });
+  renderCounter();
+  if (!stream) startCamera();
+}
+
+function stopLevelTest() {
+  levelTest = null;
+  $("modeSelect").disabled = false;
+  $("pickerLabel").textContent = "Exercise";
+}
+
+// One part of the test is done: either show your level, or move on to the next part
+function finishTestPart(record) {
+  const part = LEVEL_TEST[levelTest.step];
+  const outcome = levelTestStep(levelTest, record);
+  const reps = outcome.results.at(-1).reps;
+  if (outcome.done) {
+    finishLevelTest(outcome.level, outcome.results);
+    return;
+  }
+  levelTest = { step: outcome.step, results: outcome.results, stopLevel: outcome.stopLevel };
+  const next = LEVEL_TEST[outcome.step];
+  $("setTitle").textContent = `Part ${outcome.step} done`;
+  $("setBody").innerHTML = `
+    <p class="set-count"><b>${reps}</b><span>${part.short} push-ups${part.perSide ? " per side" : ""}</span></p>
+    <p class="set-types">Strong. Next up: ${next.name.toLowerCase()}.</p>
+    <p class="set-note">${next.how}</p>
+    <div class="set-progress"><p class="set-note">Rest as long as you need, then do as many as you can. Part ${outcome.step + 1} starts with your first rep.</p></div>`;
+  $("setOkBtn").textContent = "Got it";
+  $("setAltBtn").textContent = `Stop here and start at level ${outcome.stopLevel + 1}`;
+  $("setAltBtn").hidden = false;
+  startRestTimer();
+  $("setCard").hidden = false;
+  say(`${reps}. Strong. Next: ${next.name}.`);
+}
+
+function finishLevelTest(newLevel, results) {
+  stopLevelTest();
+  placed = true;
+  saveData("placed", true);
+  level = newLevel;
+  saveData("level", level);
+  useLevelMode();
+  const step = LADDER[level];
+  const scores = results.map((r) => {
+    const part = LEVEL_TEST.find((p) => p.id === r.id);
+    return `${r.reps} ${part.short} push-ups${part.perSide ? " per side" : ""}`;
+  }).join(", ");
+  $("setCard").hidden = true;
+  clearInterval(restTimer);
+  showTakeover(`You start at level ${level + 1}`, step.name, step.how, `Your test: ${scores}.`, "Start training");
+  setTimeout(() => say(`You start at level ${level + 1}. ${step.name}.`), 900);
+  renderCounter();
+  renderHome();
+}
+
+$("setAltBtn").onclick = () => {
+  if (levelTest) finishLevelTest(levelTest.stopLevel, levelTest.results);
+};
+$("ladderTestBtn").onclick = () => {
+  warmUpVoice();
+  startLevelTest();
+};
 
 $("finishBtn").onclick = finishSet;
 $("setOkBtn").onclick = () => { $("setCard").hidden = true; clearInterval(restTimer); };
 $("levelOkBtn").onclick = () => { $("levelCard").hidden = true; };
 
 function renderCounter() {
+  if (levelTest) {
+    const part = LEVEL_TEST[levelTest.step];
+    $("countBig").textContent = set ? testReps(part, set) : 0;
+    $("countType").textContent = part.perSide && set
+      ? `Left ${set.good["archer-left"] || 0}, right ${set.good["archer-right"] || 0}`
+      : part.name;
+    $("countGoal").textContent = `Level test, part ${levelTest.step + 1}. As many as you can.`;
+    return;
+  }
   $("countBig").textContent = set ? totalGood(set) : 0;
   const parts = set ? Object.entries(set.good).map(([k, n]) => `${keyName(k)} ${n}`) : [];
   $("countType").textContent = parts.join(", ") || (mode === "auto" ? "Ready" : TYPE_NAMES[mode]);
@@ -1564,6 +1736,17 @@ function renderCounter() {
 
 // The start screen: your level and what unlocks the next one
 function renderHome() {
+  if (!placed) {
+    $("homeLevel").textContent = "First time here";
+    $("homeTitle").textContent = "Find your level";
+    $("homeGoal").textContent = "Do as many push-ups as you can in a row. If that's easy, you'll try harder ones. It takes about 5 minutes.";
+    $("homeDots").innerHTML = "";
+    $("startBtn").textContent = "Start the level test";
+    $("altStartBtn").textContent = "Skip it and start at level 1";
+    return;
+  }
+  $("startBtn").textContent = "Start camera";
+  $("altStartBtn").textContent = "Retake the level test";
   const step = LADDER[level];
   if (!step) {
     $("homeLevel").textContent = `All ${LADDER.length} levels done`;
@@ -1595,7 +1778,9 @@ function updateHint(m) {
   if (mode !== "oneArm" && !m.bothHandsSeen) return setHint("Only one hand is in view. Move the phone back a little.", "warn");
   if (counter.view === "side") return setHint("The camera sees your side. Turn it to face your head.", "warn");
   if (counter.phase === "waiting") return setHint("Straighten your arms to start.", "");
-  if (counter.phase === "top" && !set) return setHint("Ready. Start whenever you like.", "good");
+  if (counter.phase === "top" && !set) {
+    return setHint(levelTest ? `Level test: as many ${LEVEL_TEST[levelTest.step].short} push-ups as you can.` : "Ready. Start whenever you like.", "good");
+  }
   setHint("", "");
 }
 
@@ -1630,7 +1815,10 @@ $("ladderList").onclick = (e) => {
   if (i === undefined) return;
   const step = LADDER[+i];
   if (!window.confirm(`Move to level ${+i + 1}, ${step.name.toLowerCase()}?`)) return;
+  if (levelTest) stopLevelTest();
   if (set) finishSet();
+  placed = true;
+  saveData("placed", true);
   level = +i;
   saveData("level", level);
   useLevelMode();
@@ -1656,7 +1844,7 @@ function renderHistory() {
       return `<li class="set-row">
         <span class="set-bar"><i style="width:${(totalGood(s) / most) * 100}%"></i></span>
         <span class="set-reps">${totalGood(s)}</span>
-        <span class="set-detail">${setTypes(s)}${bad ? `. ${bad}` : ""}</span>
+        <span class="set-detail">${setTypes(s)}${s.test ? ", level test" : ""}${bad ? `. ${bad}` : ""}</span>
       </li>`;
     }).join("");
     return `<section class="workout">

@@ -36,6 +36,26 @@ Half reps don't count. You'll see and hear "Go lower".
 
 **The depth gauge:** the arc around your count shows how low you are. Both sides sweep up as you go down, and the whole arc turns blue once you're deep enough. If it's blue when you push back up, the rep counts.
 
+## Level test
+
+The first time you open the app, it offers a quick level test instead of starting everyone at level 1. Each part is one set of **as many good reps as you can in a row**:
+
+| Part | Your result | Where you start |
+|---|---|---|
+| 1. Regular push-ups | Fewer than 5 | Level 1, Incline |
+| | 5 – 19 | Level 2, Regular |
+| | 20 or more | Go on to part 2 |
+| 2. Diamond push-ups | Fewer than 15 | Level 3, Diamond |
+| | 15 or more | Go on to part 3 |
+| 3. Archer push-ups (your weaker side) | Fewer than 6 | Level 4, Decline |
+| | 6 – 11 | Level 5, Archer |
+| | 12 or more | Level 6, Pseudo-planche |
+
+- During the test, the big number counts only the push-up being tested. Wide push-ups count as regular. If you do a different kind (a knee push-up, say), a message tells you it didn't count for the test.
+- Between parts, rest as long as you need. The next part starts with your first rep, or tap **Stop here** to start at the level you've reached.
+- At the end you see your starting level and your scores, and the ladder is set for you. Test sets are saved in your history, marked "level test".
+- You can skip the test and start at level 1, or retake it any time: tap **Retake the level test** on the start screen, or **Take the level test** in the Ladder.
+
 ## Sets and the ladder
 
 - A **set** starts with your first rep. It finishes when you tap **Finish set**, when you get out of push-up position for 4 seconds, or when 20 seconds pass without a rep.
@@ -54,7 +74,7 @@ The **Ladder** button shows the levels:
 | 6 | Pseudo-planche | 3 sets of 8 |
 | 7 | One-arm (the final goal) | 3 sets of 5 per side |
 
-Everyone starts at level 1. If you can already do the earlier levels, open **Ladder** and tap **Start from here** on the right level.
+Your starting level comes from the level test (or level 1 if you skip it). You can also move to any level yourself: open **Ladder** and tap **Start from here**.
 
 ## Push-up types
 
