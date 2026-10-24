@@ -25,7 +25,7 @@ Because the screen faces you, you can watch your count while you do push-ups. Th
 ## How a rep is counted
 
 1. Start at the top with your **arms straight**.
-2. Go down until your elbows are bent to **about 90°**, or your shoulders have come down at least 60% of the way to your hands.
+2. Go down until your elbows are bent to **about 90°**, or your shoulders have come down at least 55% of the way to your hands.
 3. Come back up until your **arms are straight** again.
 
 Half reps don't count. You'll see and hear "Go lower".
@@ -90,7 +90,7 @@ Tap **Debug** (the bug icon on a phone) to show or hide live numbers. Tap **Copy
 | View | **Front ✓** or **Slant ✓** are fine. **Side ✗** means turn the phone to face your head |
 | Left / Right elbow | 180° = arm straight, 90° = bent at a right angle |
 | Working arm | Which arm the counter is following: both, or one (archer, one-arm) |
-| Shoulder drop | How far your shoulders have come down toward your hands. 0% = top, 60%+ = deep enough |
+| Shoulder drop | How far your shoulders have come down toward your hands. 0% = top, 55%+ = deep enough |
 | Hand gap | Gap between your wrists compared with your shoulders. About 1.4× was regular in testing |
 | Hip line | 0 = body straight, plus = sagging, minus = hips high. Shows "(off)" from the front |
 | Body tilt | 0° = flat, plus = head higher than feet |
@@ -111,7 +111,7 @@ The numbers the app uses to make decisions are at the top of `index.html`, in th
 
 - **"Camera permission was blocked"**: tap the icon to the left of the web address (a lock or "aA"), allow the camera, then reload the page.
 - **"Couldn't load the body tracker"**: check your internet connection and reload.
-- **Reps aren't counting**: turn on Debug and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 60%.
+- **Reps aren't counting**: turn on Debug and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 55%.
 - **Skeleton jumps around or disappears**: add more light, and make sure both hands and shoulders are on screen.
 
 ## Planned for later

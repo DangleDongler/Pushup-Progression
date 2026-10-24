@@ -287,7 +287,7 @@ const SETTINGS = {
   startRep: 145,            // elbows below this = you've started going down
   startDrop: 0.2,           // ...or shoulders have dropped this much (0.2 = 20%)
   bottomAngle: 100,         // deep enough: elbows at or below this (about 90°, plus a little allowance for camera wobble)
-  bottomDrop: 0.6,          // ...or shoulders dropped at least 60% of the way to your hands (helps if you tuck your elbows)
+  bottomDrop: 0.55,         // ...or shoulders dropped at least 55% of the way to your hands (helps if you tuck your elbows)
   minRepSeconds: 0.4,       // anything faster is treated as a glitch, not a rep
 
   // Hips. Only checked when the camera is at a slant or side: from the front, hips are hidden.
@@ -944,7 +944,7 @@ function draw(points, m) {
 
   if (!debugOn) return;
 
-  // Depth line: get your shoulders down to here (60% of the way to your hands)
+  // Depth line: get your shoulders down to here (see bottomDrop in SETTINGS)
   if (counter.top) {
     const handY = Math.max(Y(BODY.lWrist), Y(BODY.rWrist));
     const targetY = handY - counter.top.height * (1 - SETTINGS.bottomDrop);
