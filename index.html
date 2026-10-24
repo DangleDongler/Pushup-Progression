@@ -9,6 +9,7 @@
   :root {
     --bg: #0f1115;
     --panel: rgba(15, 17, 21, 0.85);
+    --raised: #171a21;
     --text: #f2f4f7;
     --muted: #9aa3b2;
     --line: #2a2f3a;
@@ -28,23 +29,35 @@
   body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
 
   header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 12px; padding-top: max(6px, env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; padding-top: max(6px, env(safe-area-inset-top));
     border-bottom: 1px solid var(--line);
   }
-  header h1 { font-size: 17px; margin: 0; flex: 1; white-space: nowrap; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  button {
+  button, select {
     font: inherit; font-size: 15px; color: var(--text);
     background: var(--button); border: 1px solid var(--line); border-radius: 10px;
-    padding: 8px 14px; min-height: 40px; cursor: pointer;
+    padding: 8px 12px; min-height: 40px; cursor: pointer;
   }
   button.on { border-color: var(--good); color: var(--good); }
   button.primary {
     background: var(--good); color: #0b1a10; border: none;
     font-weight: 700; font-size: 18px; padding: 14px 28px;
   }
-  button:disabled { opacity: 0.5; cursor: default; }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  header button .icon { display: none; }
+  @media (max-width: 640px) {
+    header button { padding: 6px 9px; }
+    header button .icon { display: inline; }
+    header button .label { display: none; }
+    #debug { font-size: 11px; padding: 6px 8px; }
+    footer { gap: 6px; }
+    footer label span { display: none; }
+    footer button, footer select { font-size: 14px; padding: 6px 8px; }
+    #modeSelect { max-width: 130px; }
+  }
 
   #stage { position: relative; flex: 1; min-height: 0; background: #000; }
   #view { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -62,8 +75,25 @@
   #status { min-height: 1.45em; color: var(--text) !important; }
   #status.bad { color: var(--bad) !important; }
 
+  #counter {
+    position: absolute; top: 8px; right: 8px; min-width: 104px; max-width: 40%;
+    padding: 8px 12px; border-radius: 16px; background: var(--panel);
+    text-align: center; pointer-events: none;
+  }
+  #countBig { font-size: 60px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  #countType { font-size: 14px; font-weight: 600; margin-top: 4px; }
+  #countGoal { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  #flash {
+    position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%);
+    max-width: calc(100% - 32px); padding: 10px 22px; border-radius: 18px;
+    background: var(--panel); font-size: 44px; font-weight: 800; text-align: center; pointer-events: none;
+  }
+  #flash.good { color: var(--good); }
+  #flash.bad { color: var(--bad); font-size: 24px; }
+
   #hint {
-    position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom));
+    position: absolute; left: 50%; bottom: 12px;
     transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
     padding: 8px 16px; border-radius: 999px; background: var(--panel);
     font-size: 15px; text-align: center; pointer-events: none;
@@ -74,25 +104,60 @@
 
   #debug {
     position: absolute; top: 8px; left: 8px;
-    width: min(300px, calc(100% - 16px)); max-height: calc(100% - 70px); overflow: auto;
+    width: min(270px, calc(100% - 132px)); max-height: calc(100% - 70px); overflow: auto;
     background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 10px; font-size: 13px;
+    padding: 8px 10px; font-size: 12px;
   }
   #debug table { width: 100%; border-collapse: collapse; }
-  #debug td { padding: 2px 0; vertical-align: top; }
+  #debug td { padding: 1px 0; vertical-align: top; }
+  #debug td:first-child { white-space: nowrap; }
   #debug td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 8px; }
   #debug #copyBtn { width: 100%; margin-top: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; }
   #debug details { margin-top: 6px; color: var(--muted); line-height: 1.4; }
   #debug details p { margin: 4px 0; }
   .dotL { color: var(--left); } .dotR { color: var(--right); }
 
-  /* Phone turned sideways: make the top bar and debug panel smaller */
+  .card {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(360px, calc(100% - 32px)); max-height: calc(100% - 24px); overflow: auto;
+    padding: 16px; border-radius: 16px; border: 1px solid var(--line);
+    background: var(--bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+  .card h3 { margin: 0 0 8px; font-size: 20px; }
+  .card p { margin: 6px 0; line-height: 1.4; }
+  .card button { width: 100%; margin-top: 10px; }
+  .big { font-size: 34px; font-weight: 800; }
+  .muted { color: var(--muted); }
+  .good { color: var(--good); }
+  .bad { color: var(--bad); }
+
+  .sheet { position: absolute; inset: 0; z-index: 5; overflow: auto; background: var(--bg); padding: 12px 16px 24px; }
+  .sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .sheetHead h2 { margin: 0; font-size: 20px; }
+  .step, .workout { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 8px 0; background: var(--raised); }
+  .step p, .workout p { margin: 4px 0; line-height: 1.4; }
+  .step.current { border-color: var(--good); }
+  .step.locked { opacity: 0.6; }
+  .step button { margin-top: 6px; min-height: 34px; padding: 4px 12px; font-size: 14px; }
+  .workoutHead { display: flex; justify-content: space-between; gap: 8px; }
+  .workout ol { margin: 6px 0 0; padding-left: 22px; line-height: 1.5; }
+
+  footer {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 6px 10px; padding-bottom: max(6px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+  }
+  footer label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+  #finishBtn { margin-left: auto; }
+
+  /* Phone turned sideways: make the bars and panels smaller */
   @media (max-height: 500px) {
-    header { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+    header { padding-top: max(3px, env(safe-area-inset-top)); padding-bottom: 3px; }
     header h1 { font-size: 15px; }
-    header button { min-height: 32px; padding: 4px 12px; font-size: 14px; }
-    #debug { width: 220px; font-size: 11px; padding: 6px 8px; }
-    #debug td { padding: 0; }
+    header button, footer button, footer select { min-height: 32px; padding: 3px 10px; font-size: 14px; }
+    footer { padding-top: 3px; padding-bottom: max(3px, env(safe-area-inset-bottom)); }
+    #debug { width: 210px; font-size: 11px; padding: 6px 8px; }
+    #countBig { font-size: 44px; }
     #hint { font-size: 13px; padding: 6px 12px; }
   }
 
@@ -102,12 +167,22 @@
 <body>
 <header>
   <h1>Push-up Coach</h1>
-  <button id="flipBtn" hidden>Flip camera</button>
-  <button id="debugBtn">Debug</button>
+  <button id="ladderBtn" aria-label="Ladder"><span class="icon">🪜</span><span class="label">Ladder</span></button>
+  <button id="historyBtn" aria-label="History"><span class="icon">📋</span><span class="label">History</span></button>
+  <button id="voiceBtn" aria-label="Voice"><span class="icon">🔊</span><span class="label">Voice</span></button>
+  <button id="debugBtn" aria-label="Debug"><span class="icon">🐞</span><span class="label">Debug</span></button>
+  <button id="flipBtn" aria-label="Flip camera" hidden><span class="icon">🔄</span><span class="label">Flip</span></button>
 </header>
 
 <main id="stage">
   <canvas id="view"></canvas>
+
+  <div id="counter" hidden>
+    <div id="countBig">0</div>
+    <div id="countType"></div>
+    <div id="countGoal"></div>
+  </div>
+  <div id="flash" hidden></div>
   <div id="hint" hidden></div>
 
   <div id="debug" hidden>
@@ -116,22 +191,62 @@
     <details>
       <summary>What do these numbers mean?</summary>
       <p><b>Elbow</b>: 180° = arm straight, 90° = bent at a right angle.</p>
-      <p><b>Hand gap</b>: distance between your wrists compared with your shoulders. 1.0× = hands exactly shoulder-width apart, 2.0× = twice as wide.</p>
-      <p><b>Hip line</b>: 0 = body straight as a plank. Plus numbers = hips sagging down. Minus numbers = hips pushed up high.</p>
-      <p><b>Body tilt</b>: 0° = flat. Plus = head higher than feet (incline). Minus = feet higher than head (decline).</p>
-      <p><b>Camera view</b>: small number = camera sees your side, big number = camera faces your head. "Slant" is what we want.</p>
+      <p><b>Shoulder drop</b>: how far your shoulders have come down toward your hands since the top of the rep. 0% = top, 100% = shoulders at hand level.</p>
+      <p><b>Hand gap</b>: distance between your wrists compared with your shoulders. 1.0× = same as your shoulders, 2.0× = twice as wide.</p>
+      <p><b>Hip line</b>: 0 = body straight. Plus = hips sagging. Minus = hips pushed up high. Only used when the camera is at a slant or side.</p>
+      <p><b>Body tilt</b>: 0° = flat. Plus = head higher than feet.</p>
       <p><span class="dotL">Blue dots</span> = your left side, <span class="dotR">orange dots</span> = your right side.</p>
     </details>
   </div>
 
+  <div id="setCard" class="card" hidden>
+    <h3 id="setTitle"></h3>
+    <div id="setBody"></div>
+    <p id="restTimer" class="muted"></p>
+    <button id="setOkBtn">OK</button>
+  </div>
+
+  <div id="levelCard" class="card" hidden>
+    <h3>🎉 Level up!</h3>
+    <div id="levelBody"></div>
+    <button id="levelOkBtn" class="primary">Nice!</button>
+  </div>
+
   <div id="start">
     <h2>Push-up Coach</h2>
-    <p>Stand your phone up on the floor about 2 metres (6–7 ft) away, turned sideways, at a slant: halfway between facing your head and facing your side. Your whole body, head to feet, needs to be in the picture.</p>
+    <p>Stand your phone upright on the floor, about a forearm's length in front of where your hands will go, with the screen facing you. Lean it against something so it doesn't fall. You should see both hands, both arms and your shoulders on screen.</p>
     <button id="startBtn" class="primary">Start camera</button>
     <p id="status">Loading body tracker…</p>
     <p style="font-size:13px">Your video stays on this device. Nothing is uploaded.</p>
   </div>
+
+  <section id="ladderSheet" class="sheet" hidden>
+    <div class="sheetHead"><h2>Progression ladder</h2><button data-close>Close</button></div>
+    <p class="muted">Unlock the next level by doing the target in one workout. Only good reps of that exact push-up count.</p>
+    <div id="ladderList"></div>
+  </section>
+
+  <section id="historySheet" class="sheet" hidden>
+    <div class="sheetHead"><h2>History</h2><button data-close>Close</button></div>
+    <p id="storageWarning" class="bad" hidden>This browser isn't letting the app save anything (private browsing?). Your history will be lost when you close the page.</p>
+    <div id="historyList"></div>
+    <button id="clearHistoryBtn" class="danger">Delete all history</button>
+  </section>
 </main>
+
+<footer id="controls" hidden>
+  <label><span>Exercise</span>
+    <select id="modeSelect" aria-label="Exercise">
+      <option value="auto">Auto-detect</option>
+      <option value="incline">Incline</option>
+      <option value="decline">Decline</option>
+      <option value="pseudoPlanche">Pseudo-planche</option>
+      <option value="oneArm">One-arm</option>
+    </select>
+  </label>
+  <button id="knuckleBtn">☐ Knuckles</button>
+  <button id="finishBtn" disabled>Finish set</button>
+</footer>
 
 <video id="video" playsinline muted></video>
 
@@ -142,13 +257,41 @@ import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 // 1. SETTINGS YOU CAN TUNE
 // ================================================================
 const SETTINGS = {
-  model: "full",          // "lite" = faster on old phones, "full" = more accurate
-  minVisibility: 0.5,     // how sure the tracker must be that it can see a body part (0 to 1)
-  sideViewBelow: 0.3,     // "Camera view" number below this = camera is looking at your side
-  frontViewAbove: 1.3,    // "Camera view" number above this = camera is looking at your head
-  pushupTiltMin: -35,     // body tilt (degrees) range that counts as "in push-up position"
-  pushupTiltMax: 60,
-  smoothing: 0.35,        // 0 to 1. Lower = steadier numbers but slower to react
+  // Body tracker
+  model: "full",            // "lite" = faster on old phones, "full" = more accurate
+  minVisibility: 0.5,       // how sure the tracker must be that it can see a body part (0 to 1)
+  smoothingMs: 40,          // steadies jittery numbers over this many milliseconds. 0 = off
+
+  // Rep counting (elbow angles are in degrees: 180 = straight arm)
+  straightArm: 160,         // elbows at or above this = arms straight (top of a rep)
+  startRep: 145,            // elbows below this = you've started going down
+  startDrop: 0.2,           // ...or shoulders have dropped this much (0.2 = 20%)
+  bottomAngle: 100,         // deep enough: elbows at or below this (about 90°, plus a little allowance for camera wobble)
+  bottomDrop: 0.6,          // ...or shoulders dropped at least 60% of the way to your hands (helps if you tuck your elbows)
+  minRepSeconds: 0.4,       // anything faster is treated as a glitch, not a rep
+
+  // Hips. Only checked when the camera is at a slant or side: from the front, hips are hidden.
+  hipSagLimit: 0.08,        // hip line above this = sagging
+  hipHighLimit: 0.10,       // hip line below minus this = hips too high
+  hipBadSeconds: 0.25,      // how long the hips must be wrong before the rep is rejected
+
+  // Push-up type. Hand gap = wrist distance ÷ shoulder distance, measured with arms straight.
+  diamondBelow: 0.8,        // hand gap below this = diamond
+  wideAbove: 1.9,           // hand gap above this = wide
+  archerGapAbove: 1.7,      // archer needs hands at least this wide...
+  archerStraightArm: 150,   // ...one arm staying straighter than this...
+  archerDifference: 45,     // ...while the other arm bends at least this much more
+
+  // Position and camera
+  pushupTiltMin: -35,       // body tilt range (degrees) that counts as "in push-up position"
+  pushupTiltMax: 70,
+  frontViewAbove: 60,       // body line steeper than this on screen = camera faces your head
+  sideViewBelow: 0.3,       // shoulder width ÷ arm length below this = camera sees your side
+
+  // Sets and workouts
+  autoEndSetSeconds: 4,     // a set finishes by itself when you leave push-up position this long
+  autoEndIdleSeconds: 20,   // ...or when no rep happens for this long
+  newWorkoutAfterMinutes: 60, // a gap longer than this starts a new workout
 };
 
 const MEDIAPIPE_FILES = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -172,6 +315,13 @@ const dist = (a, b) => length(sub(a, b));
 const mid = (a, b) => scale(add(a, b), 0.5);
 const toDegrees = (radians) => radians * 180 / Math.PI;
 
+function median(list) {
+  if (!list.length) return 0;
+  const sorted = [...list].sort((a, b) => a - b);
+  const half = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2;
+}
+
 // Angle at joint b, between a-b and c-b. 180 = straight line.
 function jointAngle(a, b, c) {
   const u = sub(a, b), v = sub(c, b);
@@ -181,7 +331,6 @@ function jointAngle(a, b, c) {
 
 // How far the hips are off the straight line from shoulders to feet,
 // as a fraction of that line's length. Plus = sagging, minus = piked up.
-// Works the same for screen points and 3D points because "down" is +y in both.
 function hipOffset(shoulders, hips, feet) {
   const line = sub(feet, shoulders);
   const bodyLength = length(line);
@@ -208,81 +357,339 @@ function bodyTilt(shoulders, feet) {
 function measure(points, points3d, width, height) {
   // Some browsers don't report how sure the tracker is; then trust every point.
   const hasVisibility = points.some((p) => p.visibility > 0);
-  const seen = (i) => !hasVisibility || points[i].visibility >= SETTINGS.minVisibility;
+  const sureness = (i) => (hasVisibility ? points[i].visibility : 1);
+  const seen = (i) => sureness(i) >= SETTINGS.minVisibility;
   const flat = (i) => ({ x: points[i].x * width, y: points[i].y * height, z: 0 }); // on screen, in pixels
   const real = (i) => points3d[i];                                                 // estimated 3D, in metres
 
+  const leftArmSeen = seen(BODY.lShoulder) && seen(BODY.lElbow) && seen(BODY.lWrist);
+  const rightArmSeen = seen(BODY.rShoulder) && seen(BODY.rElbow) && seen(BODY.rWrist);
   const feetSeen = seen(BODY.lAnkle) || seen(BODY.rAnkle);
-  const kneesSeen = seen(BODY.lKnee) || seen(BODY.rKnee);
   const [footL, footR] = feetSeen ? [BODY.lAnkle, BODY.rAnkle] : [BODY.lKnee, BODY.rKnee];
 
-  const shoulders3d = mid(real(BODY.lShoulder), real(BODY.rShoulder));
-  const hips3d = mid(real(BODY.lHip), real(BODY.rHip));
-  const feet3d = mid(real(footL), real(footR));
   const shoulders2d = mid(flat(BODY.lShoulder), flat(BODY.rShoulder));
-  const hips2d = mid(flat(BODY.lHip), flat(BODY.rHip));
-  const feet2d = mid(flat(footL), flat(footR));
+  const knees2d = mid(flat(BODY.lKnee), flat(BODY.rKnee));
+  const shoulderGap = dist(flat(BODY.lShoulder), flat(BODY.rShoulder));
+  const armLength = (s, e, w) => dist(flat(s), flat(e)) + dist(flat(e), flat(w));
+  const armLengths = [];
+  if (leftArmSeen) armLengths.push(armLength(BODY.lShoulder, BODY.lElbow, BODY.lWrist));
+  if (rightArmSeen) armLengths.push(armLength(BODY.rShoulder, BODY.rElbow, BODY.rWrist));
+  const averageArm = armLengths.length ? armLengths.reduce((a, b) => a + b) / armLengths.length : 0;
 
-  const shoulderGap2d = dist(flat(BODY.lShoulder), flat(BODY.rShoulder));
-  const torso2d = dist(shoulders2d, hips2d);
-  const viewRatio = shoulderGap2d / (torso2d || 1);
+  // The lowest hand on screen is the one on the floor (matters for one-arm push-ups).
+  const handYs = [BODY.lWrist, BODY.rWrist].filter(seen).map((i) => flat(i).y);
+  const floorHandY = handYs.length ? Math.max(...handYs) : flat(BODY.lWrist).y;
 
   const keyPoints = Object.values(BODY);
   const quality = keyPoints.reduce((sum, i) => sum + (points[i].visibility ?? 0), 0) / keyPoints.length;
 
   return {
-    elbowL: jointAngle(real(BODY.lShoulder), real(BODY.lElbow), real(BODY.lWrist)),
-    elbowR: jointAngle(real(BODY.rShoulder), real(BODY.rElbow), real(BODY.rWrist)),
-    handGap: dist(flat(BODY.lWrist), flat(BODY.rWrist)) / (shoulderGap2d || 1),
-    handGap3d: dist(real(BODY.lWrist), real(BODY.rWrist)) / (dist(real(BODY.lShoulder), real(BODY.rShoulder)) || 1),
-    hipLine: hipOffset(shoulders3d, hips3d, feet3d),
-    hipLine2d: hipOffset(shoulders2d, hips2d, feet2d),
-    tilt: bodyTilt(shoulders3d, feet3d),
-    viewRatio,
-    view: viewRatio < SETTINGS.sideViewBelow ? "side" : viewRatio > SETTINGS.frontViewAbove ? "front" : "slant",
-    quality: hasVisibility ? quality : null,
-    feetSeen, kneesSeen,
-    hipsSeen: seen(BODY.lHip) || seen(BODY.rHip),
-    armsSeen: (seen(BODY.lElbow) && seen(BODY.lWrist)) || (seen(BODY.rElbow) && seen(BODY.rWrist)),
+    elbowL: jointAngle(flat(BODY.lShoulder), flat(BODY.lElbow), flat(BODY.lWrist)),
+    elbowR: jointAngle(flat(BODY.rShoulder), flat(BODY.rElbow), flat(BODY.rWrist)),
+    leftArmSeen, rightArmSeen,
+    leftHandY: flat(BODY.lWrist).y,
+    rightHandY: flat(BODY.rWrist).y,
+    handGap: dist(flat(BODY.lWrist), flat(BODY.rWrist)) / (shoulderGap || 1),
+    shoulderHeight: floorHandY - shoulders2d.y,   // pixels from shoulders down to hands; shrinks as you go down
+    hipLine: hipOffset(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(BODY.lHip), real(BODY.rHip)), mid(real(footL), real(footR))),
+    tilt: bodyTilt(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(footL), real(footR))),
+    bodyAngle: toDegrees(Math.atan2(Math.abs(knees2d.y - shoulders2d.y), Math.abs(knees2d.x - shoulders2d.x))),
+    shoulderToArm: averageArm ? shoulderGap / averageArm : 0,
+    shouldersSeen: seen(BODY.lShoulder) || seen(BODY.rShoulder),
     bothHandsSeen: seen(BODY.lWrist) && seen(BODY.rWrist),
+    feetSeen,
+    quality: hasVisibility ? quality : null,
   };
 }
 
 // Numbers jump around a little from frame to frame; this steadies them.
-const NUMBER_KEYS = ["elbowL", "elbowR", "handGap", "handGap3d", "hipLine", "hipLine2d", "tilt", "viewRatio"];
-let steady = null;
-function smoothMeasurements(m) {
-  if (!steady) { steady = { ...m }; return steady; }
+// It's based on time, so slow and fast phones behave the same.
+const SMOOTHED = ["elbowL", "elbowR", "handGap", "shoulderHeight", "hipLine", "tilt", "bodyAngle", "shoulderToArm"];
+function smoothMeasurements(previous, m, msSinceLast) {
+  if (!previous || SETTINGS.smoothingMs <= 0) return { ...m };
+  const keep = Math.exp(-msSinceLast / SETTINGS.smoothingMs);
   const next = { ...m };
-  for (const k of NUMBER_KEYS) next[k] = steady[k] + SETTINGS.smoothing * (m[k] - steady[k]);
-  next.view = next.viewRatio < SETTINGS.sideViewBelow ? "side" : next.viewRatio > SETTINGS.frontViewAbove ? "front" : "slant";
-  steady = next;
-  return steady;
+  for (const k of SMOOTHED) next[k] = m[k] + keep * (previous[k] - m[k]);
+  return next;
+}
+
+function inPushupPosition(m) {
+  return !!m && m.shouldersSeen && (m.leftArmSeen || m.rightArmSeen)
+    && m.tilt >= SETTINGS.pushupTiltMin && m.tilt <= SETTINGS.pushupTiltMax;
+}
+
+// Where the camera is: "front" (facing your head), "slant", or "side".
+function cameraView(m) {
+  if (m.shoulderToArm < SETTINGS.sideViewBelow) return "side";
+  if (m.bodyAngle > SETTINGS.frontViewAbove) return "front";
+  return "slant";
 }
 
 // ================================================================
-// 4. SCREEN ELEMENTS AND SAVED PREFERENCES
+// 4. REP COUNTING
+// A rep = arms straight at the top → down far enough → back up with arms straight.
 // ================================================================
-const $ = (id) => document.getElementById(id);
-const video = $("video"), canvas = $("view"), ctx = canvas.getContext("2d");
-const hintEl = $("hint"), statusEl = $("status"), debugEl = $("debug");
+function newRepCounter() {
+  return { phase: "waiting", top: null, rep: null, lastInPosition: -Infinity, view: null };
+}
 
-function loadPref(key, fallback) {
+function startTop(m) {
+  return { height: m.shoulderHeight, gaps: [m.handGap], view: cameraView(m) };
+}
+
+const hipChecksOn = (view) => view === "slant" || view === "side";
+
+// Which arm is doing the work: both together, or one (archer, one-arm).
+function workingArm(m, mode) {
+  const arms = [];
+  if (m.leftArmSeen) arms.push({ side: "left", angle: m.elbowL, handY: m.leftHandY });
+  if (m.rightArmSeen) arms.push({ side: "right", angle: m.elbowR, handY: m.rightHandY });
+  if (!arms.length) return null;
+  if (mode === "oneArm") return arms.reduce((a, b) => (b.handY > a.handY ? b : a));
+  if (arms.length === 1) return arms[0];
+  const [l, r] = arms;
+  if (Math.abs(l.angle - r.angle) >= SETTINGS.archerDifference) return l.angle < r.angle ? l : r;
+  return { side: "both", angle: (l.angle + r.angle) / 2 };
+}
+
+// Feed one frame of measurements. Returns something for the screen to show, or null.
+function stepReps(c, m, now, mode) {
+  if (!inPushupPosition(m)) {
+    if (now - c.lastInPosition > 1000) { c.phase = "waiting"; c.rep = null; c.top = null; }
+    return null;
+  }
+  c.lastInPosition = now;
+  const arm = workingArm(m, mode);
+  if (!arm) return null;
+  const straight = arm.angle >= SETTINGS.straightArm;
+
+  if (c.phase === "waiting") {
+    if (straight) { c.phase = "top"; c.top = startTop(m); c.view = c.top.view; }
+    return null;
+  }
+
+  if (c.phase === "top") {
+    const dropped = c.top.height > 0 ? 1 - m.shoulderHeight / c.top.height : 0;
+    if (arm.angle >= SETTINGS.startRep && dropped <= SETTINGS.startDrop) {
+      if (straight) {
+        c.top.height = Math.max(c.top.height, m.shoulderHeight);
+        c.top.gaps.push(m.handGap);
+        if (c.top.gaps.length > 30) c.top.gaps.shift();
+        c.top.view = c.view = cameraView(m);
+      }
+      return null;
+    }
+    c.phase = "down";
+    c.rep = {
+      start: now, last: now, top: c.top,
+      lowestWorking: Infinity, lowestBoth: Infinity, lowestOne: Infinity, bottom: null, deepest: 0,
+      sagRun: 0, highRun: 0, sag: false, high: false,
+    };
+  }
+
+  // Going down or coming back up
+  const r = c.rep;
+  const dt = Math.min(now - r.last, 200);
+  r.last = now;
+  r.lowestWorking = Math.min(r.lowestWorking, arm.angle);
+  const both = m.leftArmSeen && m.rightArmSeen;
+  r.lowestBoth = Math.min(r.lowestBoth, both ? (m.elbowL + m.elbowR) / 2 : arm.angle);
+  const one = mode === "oneArm" || !both ? arm.angle : Math.min(m.elbowL, m.elbowR);
+  if (one < r.lowestOne) {
+    r.lowestOne = one;
+    r.bottom = { elbowL: m.elbowL, elbowR: m.elbowR, bothSeen: both, side: arm.side };
+  }
+  const dropNow = r.top.height > 0 ? 1 - m.shoulderHeight / r.top.height : 0;
+  r.deepest = Math.max(r.deepest, dropNow);
+  // Only a rep that has turned around (started coming back up) can finish.
+  // This matters for tucked elbows, which can look straight from the front.
+  const comingUp = arm.angle >= r.lowestWorking + 15 || dropNow <= r.deepest - 0.1;
+
+  let event = null;
+  if (hipChecksOn(r.top.view)) {
+    r.sagRun = m.hipLine > SETTINGS.hipSagLimit ? r.sagRun + dt : 0;
+    r.highRun = m.hipLine < -SETTINGS.hipHighLimit ? r.highRun + dt : 0;
+    if (!r.sag && r.sagRun >= SETTINGS.hipBadSeconds * 1000) { r.sag = true; event = { type: "warning", reason: "sag" }; }
+    if (!r.high && r.highRun >= SETTINGS.hipBadSeconds * 1000) { r.high = true; event = { type: "warning", reason: "high" }; }
+  }
+
+  if (straight && comingUp) {
+    c.phase = "top";
+    c.top = startTop(m);
+    c.rep = null;
+    const seconds = (now - r.start) / 1000;
+    if (seconds < SETTINGS.minRepSeconds) return null;
+    return { type: "rep", rep: judgeRep(r, mode, seconds) };
+  }
+  return event;
+}
+
+const BAD_REASONS = {
+  depth: { short: "Go lower", long: "Not counted: go lower (elbows to about 90°)", plural: "too shallow" },
+  sag: { short: "Hips sagging", long: "Not counted: hips sagging. Squeeze your stomach and glutes", plural: "hips sagging" },
+  high: { short: "Hips too high", long: "Not counted: hips too high. Keep your body in a straight line", plural: "hips too high" },
+};
+
+function judgeRep(r, mode, seconds) {
+  const { type, side } = classifyRep(r, mode);
+  const oneSided = type === "archer" || type === "oneArm";
+  const lowest = oneSided ? r.lowestOne : r.lowestBoth;
+  const deepEnough = lowest <= SETTINGS.bottomAngle || r.deepest >= SETTINGS.bottomDrop;
+  const reason = !deepEnough ? "depth" : r.sag ? "sag" : r.high ? "high" : null;
+  return {
+    type, side, key: side ? `${type}-${side}` : type,
+    counted: !reason, reason, seconds: +seconds.toFixed(2),
+    lowestElbow: Math.round(lowest), drop: Math.round(r.deepest * 100),
+    handGap: +median(r.top.gaps).toFixed(2), view: r.top.view,
+  };
+}
+
+// ================================================================
+// 5. PUSH-UP TYPES
+// ================================================================
+const TYPE_NAMES = {
+  incline: "Incline", regular: "Regular", wide: "Wide", diamond: "Diamond", decline: "Decline",
+  archer: "Archer", pseudoPlanche: "Pseudo-planche", oneArm: "One-arm",
+};
+
+// "archer-left" → "Archer (L)"
+function keyName(key) {
+  const [type, side] = key.split("-");
+  return TYPE_NAMES[type] + (side ? ` (${side === "left" ? "L" : "R"})` : "");
+}
+
+function classifyRep(r, mode) {
+  // Types the camera can't judge are picked by you in the Exercise menu.
+  if (mode === "incline" || mode === "decline" || mode === "pseudoPlanche") return { type: mode, side: null };
+  if (mode === "oneArm") return { type: "oneArm", side: r.bottom?.side === "right" ? "right" : "left" };
+
+  const gap = median(r.top.gaps);
+  const b = r.bottom;
+  if (b && b.bothSeen) {
+    const bent = Math.min(b.elbowL, b.elbowR), straight = Math.max(b.elbowL, b.elbowR);
+    if (straight - bent >= SETTINGS.archerDifference && straight >= SETTINGS.archerStraightArm && gap >= SETTINGS.archerGapAbove) {
+      return { type: "archer", side: b.elbowL < b.elbowR ? "left" : "right" };
+    }
+  }
+  if (r.top.view === "side") return { type: "regular", side: null };  // hand spacing can't be seen from the side
+  if (gap < SETTINGS.diamondBelow) return { type: "diamond", side: null };
+  if (gap > SETTINGS.wideAbove) return { type: "wide", side: null };
+  return { type: "regular", side: null };
+}
+
+// ================================================================
+// 6. PROGRESSION LADDER
+// ================================================================
+const LADDER = [
+  { id: "incline", name: "Incline push-up", mode: "incline", sets: 3, reps: 12,
+    how: "Hands on a sturdy bench, couch or low table. Set Exercise to Incline." },
+  { id: "regular", name: "Regular push-up", mode: "auto", sets: 3, reps: 12,
+    how: "Hands on the floor, about shoulder-width apart." },
+  { id: "diamond", name: "Diamond push-up", mode: "auto", sets: 3, reps: 12,
+    how: "Hands together under your chest, thumbs and first fingers making a diamond." },
+  { id: "decline", name: "Decline push-up", mode: "decline", sets: 3, reps: 10,
+    how: "Feet up on a chair or bench, hands on the floor. Set Exercise to Decline." },
+  { id: "archer", name: "Archer push-up", mode: "auto", sets: 3, reps: 8, perSide: true,
+    how: "Hands very wide. Bend one arm while the other stays straight out to the side. Alternate sides." },
+  { id: "pseudoPlanche", name: "Pseudo-planche push-up", mode: "pseudoPlanche", sets: 3, reps: 8,
+    how: "Hands turned outward, down by your waist. Lean your shoulders forward past your hands." },
+  { id: "oneArm", name: "One-arm push-up", mode: "oneArm", sets: 3, reps: 5, perSide: true,
+    how: "Feet wide, one hand under your chest, the other behind your back." },
+];
+
+// Good reps of this level's push-up in one set (per-side levels count your weaker side).
+function repsForStep(set, step) {
+  if (step.perSide) return Math.min(set.good[`${step.id}-left`] || 0, set.good[`${step.id}-right`] || 0);
+  return set.good[step.id] || 0;
+}
+
+function qualifyingSets(sets, step) {
+  return sets.filter((s) => repsForStep(s, step) >= step.reps).length;
+}
+
+const totalGood = (set) => Object.values(set.good).reduce((a, b) => a + b, 0);
+const goodReps = (n) => `${n} good rep${n === 1 ? "" : "s"}`;
+const totalBad = (set) => Object.values(set.bad).reduce((a, b) => a + b, 0);
+
+// ================================================================
+// 7. SAVED HISTORY (kept in this browser on this device)
+// ================================================================
+function loadData(key, fallback) {
   try { const v = localStorage.getItem("pushup." + key); return v === null ? fallback : JSON.parse(v); }
   catch { return fallback; }
 }
-function savePref(key, value) {
-  try { localStorage.setItem("pushup." + key, JSON.stringify(value)); } catch { /* private mode: just don't remember */ }
+function saveData(key, value) {
+  try { localStorage.setItem("pushup." + key, JSON.stringify(value)); return true; }
+  catch { return false; }
 }
 
-let debugOn = loadPref("debug", true);
+// Sets close together in time belong to the same workout.
+function groupWorkouts(history) {
+  const gap = SETTINGS.newWorkoutAfterMinutes * 60000;
+  const groups = [];
+  for (const set of history) {
+    const last = groups.at(-1);
+    if (last && set.time - last.at(-1).end < gap) last.push(set);
+    else groups.push([set]);
+  }
+  return groups;
+}
+
+function currentWorkout(history, now) {
+  const last = groupWorkouts(history).at(-1);
+  return last && now - last.at(-1).end < SETTINGS.newWorkoutAfterMinutes * 60000 ? last : [];
+}
+
+// ================================================================
+// 8. SCREEN ELEMENTS AND PREFERENCES
+// ================================================================
+const $ = (id) => document.getElementById(id);
+const video = $("video"), canvas = $("view"), ctx = canvas.getContext("2d");
+const hintEl = $("hint"), statusEl = $("status"), debugEl = $("debug"), flashEl = $("flash");
+
+const storageWorks = saveData("check", true);
+let history = loadData("history", []);
+let level = loadData("level", 0);
+let debugOn = loadData("debug", true);
+let voiceOn = loadData("voice", true);
+let knuckles = loadData("knuckles", false);
+let mode = "auto";
+
 function showDebug(on) {
   debugOn = on;
-  savePref("debug", on);
+  saveData("debug", on);
   $("debugBtn").classList.toggle("on", on);
   debugEl.hidden = !on || !stream;
 }
 $("debugBtn").onclick = () => showDebug(!debugOn);
+
+function showVoice(on) {
+  voiceOn = on;
+  saveData("voice", on);
+  $("voiceBtn").classList.toggle("on", on);
+  $("voiceBtn").querySelector(".icon").textContent = on ? "🔊" : "🔇";
+  if (!on && "speechSynthesis" in window) speechSynthesis.cancel();
+}
+$("voiceBtn").onclick = () => showVoice(!voiceOn);
+
+function showKnuckles(on) {
+  knuckles = on;
+  saveData("knuckles", on);
+  $("knuckleBtn").textContent = `${on ? "☑" : "☐"} Knuckles`;
+  $("knuckleBtn").classList.toggle("on", on);
+}
+$("knuckleBtn").onclick = () => showKnuckles(!knuckles);
+
+// The Exercise menu starts on whatever your current ladder level needs.
+function useLevelMode() {
+  mode = LADDER[level]?.mode ?? "auto";
+  $("modeSelect").value = mode;
+}
+$("modeSelect").onchange = (e) => {
+  if (set) finishSet();
+  mode = e.target.value;
+  renderCounter();
+};
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -299,8 +706,25 @@ function setHint(text, kind) {
   hintEl.hidden = !text;
 }
 
+let flashTimer = null;
+function flash(text, kind) {
+  flashEl.textContent = text;
+  flashEl.className = kind;
+  flashEl.hidden = false;
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { flashEl.hidden = true; }, 1300);
+}
+
+function say(text) {
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const words = new SpeechSynthesisUtterance(text);
+  words.rate = 1.1;
+  speechSynthesis.speak(words);
+}
+
 // ================================================================
-// 5. LOADING THE BODY TRACKER (MediaPipe Pose Landmarker)
+// 9. LOADING THE BODY TRACKER (MediaPipe Pose Landmarker)
 // ================================================================
 let tracker = null;
 let trackerKind = "";
@@ -331,7 +755,7 @@ async function loadTracker(useGpu) {
   trackerKind = "CPU";
 }
 
-const trackerReady = loadTracker(true).then(
+loadTracker(true).then(
   () => { if (!stream) setStatus("Ready. Tap Start camera."); },
   (err) => {
     console.error(err);
@@ -341,7 +765,7 @@ const trackerReady = loadTracker(true).then(
 );
 
 // ================================================================
-// 6. CAMERA
+// 10. CAMERA
 // ================================================================
 let stream = null;
 let facing = "user";   // "user" = selfie camera, "environment" = back camera
@@ -377,15 +801,21 @@ async function startCamera() {
   mirrored = (reportedFacing || facing) !== "environment";
 
   $("start").hidden = true;
+  $("counter").hidden = false;
+  $("controls").hidden = false;
   showDebug(debugOn);
   keepScreenOn();
-  if (!tracker) setHint("Loading body tracker…", "warn");
+  renderCounter();
 
   const cameras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
   $("flipBtn").hidden = cameras.length < 2;
 }
 
-$("startBtn").onclick = startCamera;
+$("startBtn").onclick = () => {
+  // Phones only allow speech that starts from a tap, so "warm up" the voice now.
+  if ("speechSynthesis" in window) speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+  startCamera();
+};
 $("flipBtn").onclick = () => {
   facing = facing === "user" ? "environment" : "user";
   startCamera();
@@ -400,8 +830,12 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ================================================================
-// 7. DRAWING THE CAMERA PICTURE AND SKELETON
+// 11. DRAWING THE CAMERA PICTURE AND SKELETON
 // ================================================================
+const css = getComputedStyle(document.documentElement);
+const leftColor = css.getPropertyValue("--left").trim();
+const rightColor = css.getPropertyValue("--right").trim();
+
 function drawLabel(text, x, y, unit, color = "#fff") {
   ctx.font = `600 ${Math.round(15 * unit)}px system-ui, sans-serif`;
   const w = ctx.measureText(text).width, h = 20 * unit, pad = 5 * unit;
@@ -423,10 +857,6 @@ function drawLine(x1, y1, x2, y2, color, width, dash = []) {
   ctx.stroke();
   ctx.setLineDash([]);
 }
-
-const css = getComputedStyle(document.documentElement);
-const leftColor = css.getPropertyValue("--left").trim();
-const rightColor = css.getPropertyValue("--right").trim();
 
 function draw(points, m) {
   const W = canvas.width, H = canvas.height;
@@ -459,13 +889,23 @@ function draw(points, m) {
 
   if (!debugOn) return;
 
-  // Body line: shoulders to feet. The hip dot shows how far the hips are off it.
-  const footL = m.feetSeen ? BODY.lAnkle : BODY.lKnee, footR = m.feetSeen ? BODY.rAnkle : BODY.rKnee;
-  const sx = (X(BODY.lShoulder) + X(BODY.rShoulder)) / 2, sy = (Y(BODY.lShoulder) + Y(BODY.rShoulder)) / 2;
-  const hx = (X(BODY.lHip) + X(BODY.rHip)) / 2, hy = (Y(BODY.lHip) + Y(BODY.rHip)) / 2;
-  const fx = (X(footL) + X(footR)) / 2, fy = (Y(footL) + Y(footR)) / 2;
-  drawLine(sx, sy, fx, fy, "rgba(250,204,21,0.9)", 3 * unit, [10 * unit, 8 * unit]);
-  drawLabel(`hip ${m.hipLine >= 0 ? "+" : ""}${m.hipLine.toFixed(2)}`, hx, hy - 22 * unit, unit, "#facc15");
+  // Depth line: get your shoulders down to here (60% of the way to your hands)
+  if (counter.top) {
+    const handY = Math.max(Y(BODY.lWrist), Y(BODY.rWrist));
+    const targetY = handY - counter.top.height * (1 - SETTINGS.bottomDrop);
+    drawLine(0, targetY, W, targetY, "rgba(248,113,113,0.8)", 2 * unit, [12 * unit, 10 * unit]);
+    drawLabel("shoulder depth line", W / 2, targetY - 14 * unit, unit, "#f87171");
+  }
+
+  // Body line (only meaningful when the camera is at a slant or side)
+  if (hipChecksOn(counter.view)) {
+    const footL = m.feetSeen ? BODY.lAnkle : BODY.lKnee, footR = m.feetSeen ? BODY.rAnkle : BODY.rKnee;
+    const sx = (X(BODY.lShoulder) + X(BODY.rShoulder)) / 2, sy = (Y(BODY.lShoulder) + Y(BODY.rShoulder)) / 2;
+    const hx = (X(BODY.lHip) + X(BODY.rHip)) / 2, hy = (Y(BODY.lHip) + Y(BODY.rHip)) / 2;
+    const fx = (X(footL) + X(footR)) / 2, fy = (Y(footL) + Y(footR)) / 2;
+    drawLine(sx, sy, fx, fy, "rgba(250,204,21,0.9)", 3 * unit, [10 * unit, 8 * unit]);
+    drawLabel(`hip ${signed(m.hipLine)}`, hx, hy - 22 * unit, unit, "#facc15");
+  }
 
   // Hand gap: line between wrists
   drawLine(X(BODY.lWrist), Y(BODY.lWrist), X(BODY.rWrist), Y(BODY.rWrist), "rgba(74,222,128,0.9)", 3 * unit, [6 * unit, 6 * unit]);
@@ -478,35 +918,48 @@ function draw(points, m) {
 }
 
 // ================================================================
-// 8. DEBUG PANEL
+// 12. DEBUG PANEL
 // ================================================================
 let fps = 0;
 let lastPanelUpdate = 0;
-let latest = null;   // most recent measurements, for the "Copy numbers" button
+let latest = null;      // most recent measurements, for the "Copy numbers" button
+const repLog = [];      // details of recent reps, for tuning
 
 const signed = (n, digits = 2) => (n >= 0 ? "+" : "") + n.toFixed(digits);
-const viewName = { side: "Side ✗", slant: "Slant ✓", front: "Front ✗" };
+const VIEW_NAMES = { front: "Front ✓", slant: "Slant ✓", side: "Side ✗" };
+const PHASE_NAMES = { waiting: "Waiting (straighten arms)", top: "At the top", down: "In a rep" };
+
+function describeRep(r) {
+  const result = r.counted ? "✓" : `✗ ${BAD_REASONS[r.reason].plural}`;
+  return `${keyName(r.key)} ${result}, elbow ${r.lowestElbow}°, drop ${r.drop}%, gap ${r.handGap}`;
+}
 
 function debugRows(m) {
-  if (!m) {
-    return [
-      ["Person found", "No"],
-      ["Speed", `${fps} frames/sec`],
-      ["Tracker", trackerKind || "loading…"],
-    ];
-  }
-  return [
-    ["Person found", m.quality === null ? "Yes" : `Yes (${Math.round(m.quality * 100)}% sure)`],
+  const rows = [
+    ["Person", !m ? "not found" : m.quality === null ? "found" : `found, ${Math.round(m.quality * 100)}% sure`],
     ["Speed", `${fps} frames/sec`],
-    ["Camera view", `${viewName[m.view]} (${m.viewRatio.toFixed(2)})`],
-    ["Left elbow", `${Math.round(m.elbowL)}°`],
-    ["Right elbow", `${Math.round(m.elbowR)}°`],
-    ["Hand gap", `${m.handGap.toFixed(2)}× (3D ${m.handGap3d.toFixed(2)}×)`],
-    ["Hip line", `${signed(m.hipLine)} (flat ${signed(m.hipLine2d)})`],
-    ["Body tilt", `${signed(m.tilt, 0)}°`],
-    ["Body line uses", m.feetSeen ? "ankles" : "knees (feet not visible)"],
-    ["Tracker", `${SETTINGS.model}, ${trackerKind}`],
   ];
+  if (m) {
+    const view = counter.view || cameraView(m);
+    const arm = workingArm(m, mode);
+    const drop = counter.top?.height ? Math.max(0, 1 - m.shoulderHeight / counter.top.height) : 0;
+    rows.push(
+      ["View", `${VIEW_NAMES[view]} (${Math.round(m.bodyAngle)}°, ${m.shoulderToArm.toFixed(2)})`],
+      ["Left elbow", m.leftArmSeen ? `${Math.round(m.elbowL)}°` : "can't see"],
+      ["Right elbow", m.rightArmSeen ? `${Math.round(m.elbowR)}°` : "can't see"],
+      ["Working arm", arm ? `${arm.side} ${Math.round(arm.angle)}°` : "–"],
+      ["Shoulder drop", `${Math.round(drop * 100)}%`],
+      ["Hand gap", `${m.handGap.toFixed(2)}×`],
+      ["Hip line", hipChecksOn(view) ? signed(m.hipLine) : `${signed(m.hipLine)} (off)`],
+      ["Body tilt", `${signed(m.tilt, 0)}°`],
+    );
+  }
+  rows.push(
+    ["State", PHASE_NAMES[counter.phase]],
+    ["Last rep", repLog.length ? describeRep(repLog.at(-1)) : "–"],
+    ["Tracker", trackerKind ? `${SETTINGS.model}, ${trackerKind}` : "loading…"],
+  );
+  return rows;
 }
 
 function updateDebugPanel(m, now) {
@@ -517,6 +970,8 @@ function updateDebugPanel(m, now) {
 
 $("copyBtn").onclick = async () => {
   const lines = debugRows(latest).map(([k, v]) => `${k}: ${v}`);
+  lines.push("", "Recent reps:", ...repLog.map(describeRep));
+  lines.push("", `Exercise: ${mode}, knuckles: ${knuckles}, level: ${level + 1}`);
   lines.push(`Screen: ${canvas.width}x${canvas.height}, camera: ${facing}`, `Browser: ${navigator.userAgent}`);
   const text = lines.join("\n");
   try {
@@ -529,28 +984,232 @@ $("copyBtn").onclick = async () => {
 };
 
 // ================================================================
-// 9. CAMERA-POSITION ADVICE (the message at the bottom)
+// 13. WORKOUT: SETS, FEEDBACK AND THE COUNTER
 // ================================================================
-function adviseCamera(m) {
-  if (!m) return setHint("I can't see you yet. Get your whole body in the picture.", "bad");
-  if (!m.hipsSeen || (!m.feetSeen && !m.kneesSeen)) return setHint("Move the phone further away. I can't see your legs.", "bad");
-  if (!m.armsSeen) return setHint("I can't see your arms. Move the phone further away.", "bad");
-  if (m.tilt < SETTINGS.pushupTiltMin || m.tilt > SETTINGS.pushupTiltMax) {
-    return setHint("Get into push-up position to check the camera angle.", "");
+const counter = newRepCounter();
+let set = null;            // the set in progress
+let warning = { text: "", until: 0 };
+let restTimer = null;
+
+function startSet(now) {
+  set = { time: Date.now(), startedAt: now, lastRepAt: now, mode, good: {}, bad: {} };
+  $("setCard").hidden = true;
+  clearInterval(restTimer);
+  $("finishBtn").disabled = false;
+}
+
+function handleEvent(event, now) {
+  if (event.type === "warning") {
+    const text = BAD_REASONS[event.reason].short;
+    warning = { text, until: now + 2000 };
+    say(text);
+    return;
   }
-  if (!m.feetSeen) return setHint("I can't see your feet. Move the phone back a little.", "warn");
-  if (m.view === "side") return setHint("Turn the phone a bit toward your head (a slant), so I can see both hands.", "warn");
-  if (m.view === "front") return setHint("Move the phone a bit to the side (a slant), so I can see your hips.", "warn");
-  if (!m.bothHandsSeen) return setHint("I can only see one hand. Turn the phone a little more toward your head.", "warn");
-  setHint("Camera angle looks good!", "good");
+  const rep = event.rep;
+  if (!set) startSet(now);
+  set.lastRepAt = now;
+  repLog.push(rep);
+  if (repLog.length > 10) repLog.shift();
+  if (rep.counted) {
+    set.good[rep.key] = (set.good[rep.key] || 0) + 1;
+    const n = totalGood(set);
+    flash(`✓ ${n}`, "good");
+    say(String(n));
+  } else {
+    set.bad[rep.reason] = (set.bad[rep.reason] || 0) + 1;
+    flash(BAD_REASONS[rep.reason].long, "bad");
+    say(BAD_REASONS[rep.reason].short);
+  }
+  renderCounter();
+}
+
+function describeGood(s) {
+  const parts = Object.entries(s.good).map(([k, n]) => `${keyName(k)} ${n}`);
+  return (parts.join(", ") || "no good reps") + (s.knuckles ? " · knuckles" : "");
+}
+
+function describeBad(s) {
+  const parts = Object.entries(s.bad).map(([reason, n]) => `${n} ${BAD_REASONS[reason].plural}`);
+  return parts.length ? `Not counted: ${parts.join(", ")}` : "";
+}
+
+function finishSet() {
+  if (!set) return;
+  const finished = set;
+  set = null;
+  $("finishBtn").disabled = true;
+  if (totalGood(finished) + totalBad(finished) === 0) { renderCounter(); return; }
+
+  const record = {
+    time: finished.time, end: Date.now(), mode: finished.mode, knuckles,
+    good: finished.good, bad: finished.bad,
+  };
+  history.push(record);
+  saveData("history", history);
+
+  const workout = currentWorkout(history, Date.now());
+  const step = LADDER[level];
+  let progress = "";
+  let levelledUp = null;
+  if (step) {
+    const done = qualifyingSets(workout, step);
+    const need = `${step.reps}${step.perSide ? " per side" : ""}`;
+    progress = repsForStep(record, step) >= step.reps
+      ? `<p class="good">Counts toward level ${level + 1}: ${Math.min(done, step.sets)} of ${step.sets} sets of ${need} ${step.name.toLowerCase()}s done.</p>`
+      : `<p class="muted">Level ${level + 1} needs sets of ${need} ${step.name.toLowerCase()}s. This one had ${repsForStep(record, step)}.</p>`;
+    if (done >= step.sets) {
+      level += 1;
+      saveData("level", level);
+      levelledUp = { from: step, to: LADDER[level] };
+    }
+  }
+
+  $("setTitle").textContent = `Set ${workout.length} done`;
+  $("setBody").innerHTML = `
+    <p class="big">${totalGood(record)} <span class="muted" style="font-size:16px;font-weight:400">${goodReps(totalGood(record)).replace(/^\d+ /, "")}</span></p>
+    <p>${describeGood(record)}</p>
+    ${describeBad(record) ? `<p class="bad">${describeBad(record)}</p>` : ""}
+    ${progress}`;
+  const restStart = Date.now();
+  const tick = () => {
+    const s = Math.floor((Date.now() - restStart) / 1000);
+    $("restTimer").textContent = `Resting: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}. Start your next set whenever you're ready.`;
+  };
+  tick();
+  clearInterval(restTimer);
+  restTimer = setInterval(tick, 1000);
+  $("setCard").hidden = false;
+  say(`Set done. ${goodReps(totalGood(record))}.`);
+
+  if (levelledUp) showLevelUp(levelledUp);
+  renderCounter();
+}
+
+function showLevelUp({ from, to }) {
+  $("levelBody").innerHTML = to
+    ? `<p>You finished <b>${from.name}s</b>.</p><p>Unlocked level ${level + 1}: <b>${to.name}</b></p><p class="muted">${to.how}</p>`
+    : `<p>You finished the whole ladder with <b>${from.name}s</b>. Amazing!</p>`;
+  $("levelCard").hidden = false;
+  useLevelMode();
+  setTimeout(() => say(to ? `Level up! Next: ${to.name}` : "You finished the whole ladder!"), 1800);
+}
+
+$("finishBtn").onclick = finishSet;
+$("setOkBtn").onclick = () => { $("setCard").hidden = true; clearInterval(restTimer); };
+$("levelOkBtn").onclick = () => { $("levelCard").hidden = true; };
+
+function renderCounter() {
+  $("countBig").textContent = set ? totalGood(set) : 0;
+  const parts = set ? Object.entries(set.good).map(([k, n]) => `${keyName(k)} ${n}`) : [];
+  $("countType").textContent = parts.join(" · ") || (mode === "auto" ? "Ready" : TYPE_NAMES[mode]);
+  const step = LADDER[level];
+  if (step) {
+    const done = qualifyingSets(currentWorkout(history, Date.now()), step);
+    $("countGoal").textContent = `Goal ${step.reps}${step.perSide ? "/side" : ""} · ${done}/${step.sets} sets`;
+  } else {
+    $("countGoal").textContent = "Ladder complete 🏆";
+  }
+}
+
+// The message at the bottom of the screen
+function updateHint(m, now) {
+  if (!tracker) return setHint(trackerError || "Loading body tracker…", trackerError ? "bad" : "warn");
+  if (now < warning.until) return setHint(warning.text, "bad");
+  if (!m) return setHint("I can't see you. Put the phone on the floor in front of your hands, facing you.", "bad");
+  if (!m.shouldersSeen || !(m.leftArmSeen || m.rightArmSeen)) {
+    return setHint("Move the phone back a little so I can see your hands and shoulders.", "bad");
+  }
+  if (!inPushupPosition(m)) {
+    return setHint(set ? "Resting. Get back into position to keep going." : "Get into push-up position with your arms straight.", "");
+  }
+  if (mode !== "oneArm" && !m.bothHandsSeen) return setHint("I can only see one hand. Move the phone back a little.", "warn");
+  if (counter.view === "side") return setHint("The camera is looking at your side. Turn it to face your head.", "warn");
+  if (counter.phase === "waiting") return setHint("Straighten your arms to start.", "");
+  if (counter.phase === "top" && !set) return setHint("Ready! Start your push-ups.", "good");
+  setHint("", "");
 }
 
 // ================================================================
-// 10. MAIN LOOP: one pass per camera frame
+// 14. LADDER AND HISTORY SCREENS
+// ================================================================
+function renderLadder() {
+  const today = currentWorkout(history, Date.now());
+  $("ladderList").innerHTML = LADDER.map((step, i) => {
+    const status = i < level ? "done" : i === level ? "current" : "locked";
+    const badge = { done: "✅", current: "▶️", locked: "🔒" }[status];
+    const target = `${step.sets} sets of ${step.reps}${step.perSide ? " per side" : ""}`;
+    const progress = status === "current" ? `<p class="good">This workout: ${qualifyingSets(today, step)} of ${step.sets} sets done</p>` : "";
+    const button = status === "current" ? "" : `<button data-level="${i}">Start from here</button>`;
+    return `<div class="step ${status}">
+      <p><b>${badge} ${i + 1}. ${step.name}</b></p>
+      <p class="muted">${step.how}</p>
+      <p>To unlock the next level: ${target}</p>
+      ${progress}${button}
+    </div>`;
+  }).join("") + (level >= LADDER.length ? "<p class='good'><b>🏆 You've completed the whole ladder!</b></p>" : "");
+}
+
+$("ladderList").onclick = (e) => {
+  const i = e.target.dataset?.level;
+  if (i === undefined) return;
+  const step = LADDER[+i];
+  if (!window.confirm(`Move to level ${+i + 1}: ${step.name}?`)) return;
+  if (set) finishSet();
+  level = +i;
+  saveData("level", level);
+  useLevelMode();
+  renderLadder();
+  renderCounter();
+};
+
+function renderHistory() {
+  $("storageWarning").hidden = storageWorks;
+  if (!history.length) {
+    $("historyList").innerHTML = "<p class='muted'>No workouts yet. Finish a set and it will show up here.</p>";
+    $("clearHistoryBtn").hidden = true;
+    return;
+  }
+  $("clearHistoryBtn").hidden = false;
+  $("historyList").innerHTML = groupWorkouts(history).reverse().map((sets) => {
+    const when = new Date(sets[0].time).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const total = sets.reduce((n, s) => n + totalGood(s), 0);
+    const rows = sets.map((s) => {
+      const bad = describeBad(s);
+      return `<li>${describeGood(s)}${bad ? ` <span class="muted">(${bad.toLowerCase()})</span>` : ""}</li>`;
+    }).join("");
+    return `<div class="workout">
+      <div class="workoutHead"><b>${when}</b><span class="good">${goodReps(total)}</span></div>
+      <ol>${rows}</ol>
+    </div>`;
+  }).join("");
+}
+
+$("clearHistoryBtn").onclick = () => {
+  if (!window.confirm("Delete all your workout history? This can't be undone. (Your ladder level stays.)")) return;
+  history = [];
+  saveData("history", history);
+  renderHistory();
+  renderCounter();
+};
+
+function openSheet(id, render) {
+  render();
+  $(id).hidden = false;
+}
+$("ladderBtn").onclick = () => openSheet("ladderSheet", renderLadder);
+$("historyBtn").onclick = () => openSheet("historySheet", renderHistory);
+document.querySelectorAll("[data-close]").forEach((b) => {
+  b.onclick = () => { b.closest(".sheet").hidden = true; };
+});
+
+// ================================================================
+// 15. MAIN LOOP: one pass per camera frame
 // ================================================================
 let lastVideoTime = -1;
 let framesThisSecond = 0, secondStart = performance.now();
 let switchingToCpu = false;
+let steady = null;
+let lastFrameAt = 0;
 
 function frame() {
   requestAnimationFrame(frame);
@@ -581,18 +1240,25 @@ function frame() {
 
   const points = result?.landmarks?.[0];
   const points3d = result?.worldLandmarks?.[0];
-  let m = null;
-  if (points && points3d) {
-    m = smoothMeasurements(measure(points, points3d, canvas.width, canvas.height));
-  } else {
-    steady = null;
-  }
-  latest = m;
+  steady = points && points3d
+    ? smoothMeasurements(steady, measure(points, points3d, canvas.width, canvas.height), now - lastFrameAt)
+    : null;
+  lastFrameAt = now;
+  latest = steady;
 
-  draw(points, m);
-  if (tracker) adviseCamera(m);
-  else if (trackerError) setHint(trackerError, "bad");
-  updateDebugPanel(m, now);
+  if (tracker) {
+    const event = stepReps(counter, steady, now, mode);
+    if (event) handleEvent(event, now);
+    if (set && counter.phase !== "down") {
+      const away = now - counter.lastInPosition > SETTINGS.autoEndSetSeconds * 1000;
+      const idle = now - set.lastRepAt > SETTINGS.autoEndIdleSeconds * 1000;
+      if (away || idle) finishSet();
+    }
+  }
+
+  draw(points, steady);
+  updateHint(steady, now);
+  updateDebugPanel(steady, now);
 
   framesThisSecond++;
   if (now - secondStart >= 1000) {
@@ -602,7 +1268,10 @@ function frame() {
   }
 }
 
+useLevelMode();
 showDebug(debugOn);
+showVoice(voiceOn);
+showKnuckles(knuckles);
 requestAnimationFrame(frame);
 </script>
 </body>

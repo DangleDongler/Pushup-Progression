@@ -1,10 +1,10 @@
 # Push-up Coach
 
-A web app that watches your push-ups through your phone or laptop camera, counts only good reps, works out which push-up type you're doing, and helps you progress to harder variations.
+A web app that watches your push-ups through your phone's camera, counts only good reps, works out which push-up type you're doing, and moves you up a ladder of harder variations.
 
 Everything runs inside your browser. Your video never leaves your device.
 
-**Progress: step 1 of 6 is done** (camera, skeleton and debug mode).
+**Version 1 is complete:** camera and skeleton, rep counting, form warnings, push-up type detection, sets and progression ladder, and saved history.
 
 ## Open the app
 
@@ -12,54 +12,101 @@ Everything runs inside your browser. Your video never leaves your device.
 
 - Use **Chrome** on Android or a laptop, or **Safari** on iPhone.
 - Tap **Start camera**, then tap **Allow** when the browser asks about the camera.
-- The first load downloads about 20 MB (the body tracker), so use Wi-Fi if you can. After that it's faster.
+- The first load downloads about 20 MB (the body tracker), so use Wi-Fi if you can.
 
-## Camera setup
+## Camera setup (front view)
 
-1. Stand your phone up on the floor, turned sideways (landscape), about 2 metres (6–7 ft) away.
-2. Angle it at a **slant**: halfway between facing the top of your head and facing your side.
-3. Your whole body, head to feet, must be in the picture.
-4. The message at the bottom of the screen tells you if the angle needs fixing. Get into push-up position and wait for **"Camera angle looks good!"**
+1. Stand your phone **upright** on the floor, about a forearm's length in front of where your hands will go, with the **screen facing you**.
+2. Lean it against something (a shoe, a water bottle) or use a phone stand.
+3. Both hands, both arms and your shoulders must be on screen. Your head being cut off at the top is fine.
 
-**Why a slant?** From the side, the camera sees your elbows and hips clearly, but your two hands overlap, so it can't tell regular, wide and diamond push-ups apart. From the front, it sees your hands clearly, but your legs hide behind your body, so it can't see sagging hips. A slant sees enough of both.
+Because the screen faces you, you can watch your count while you do push-ups. The app also says each count out loud (tap **Voice** to turn that off).
+
+## How a rep is counted
+
+1. Start at the top with your **arms straight**.
+2. Go down until your elbows are bent to **about 90°**, or your shoulders have come down at least 60% of the way to your hands.
+3. Come back up until your **arms are straight** again.
+
+Half reps don't count. You'll see and hear "Go lower".
+
+## Sets and the ladder
+
+- A **set** starts with your first rep. It finishes when you tap **Finish set**, when you get out of push-up position for 4 seconds, or when 20 seconds pass without a rep.
+- After each set you'll see how many good reps you did, which types, and your progress toward the next level.
+- Sets less than an hour apart count as one **workout**.
+
+The **Ladder** button shows the levels:
+
+| Level | Push-up | To unlock the next level (in one workout) |
+|---|---|---|
+| 1 | Incline (hands on a bench, couch or low table) | 3 sets of 12 |
+| 2 | Regular | 3 sets of 12 |
+| 3 | Diamond | 3 sets of 12 |
+| 4 | Decline (feet up on a chair) | 3 sets of 10 |
+| 5 | Archer | 3 sets of 8 per side |
+| 6 | Pseudo-planche | 3 sets of 8 |
+| 7 | One-arm (the final goal) | 3 sets of 5 per side |
+
+Everyone starts at level 1. If you can already do the earlier levels, open **Ladder** and tap **Start from here** on the right level.
+
+## Push-up types
+
+**Detected automatically** (with the Exercise menu on **Auto-detect**):
+- **Regular**: hands a bit wider than your shoulders.
+- **Wide**: hands much wider than your shoulders.
+- **Diamond**: hands close together under your chest.
+- **Archer**: one arm bends while the other stays straight out to the side. Left and right are counted separately.
+
+**Picked by you** in the Exercise menu, because the camera can't judge them from the front:
+- **Incline** and **Decline**: the front camera can't tell how high your hands or feet are.
+- **Pseudo-planche** and **One-arm**.
+- **Knuckles**: tap the Knuckles button. The camera can't reliably tell fists from flat hands.
+
+When your ladder level needs one of these, the Exercise menu switches to it automatically.
+
+## Honest limits
+
+- **Hip sagging and hips too high are not checked from the front.** From the front, your hips are hidden behind your shoulders and the tracker can only guess where they are. Workaround: if you want hip checks, put the phone at a **slant** (halfway between facing your head and facing your side, about 2 m away, whole body in view). The app notices the slanted camera and turns hip checks on automatically.
+- **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Debug mode).
+- **Slow phones:** if Speed in debug mode drops below about 8 frames per second, very fast reps can be missed. Switching to the `lite` model helps (see Changing settings).
 
 ## Debug mode
 
-Tap **Debug** (top right) to show or hide the live numbers. Tap **Copy numbers** to copy them, so you can paste them into a chat when something is detected wrong.
+Tap **Debug** (the bug icon on a phone) to show or hide live numbers. Tap **Copy numbers** to copy them along with your last 10 reps, then paste them into a chat when something is detected wrong.
 
 | Number | What it means |
 |---|---|
-| Person found | Whether the tracker can see a person, and how sure it is |
-| Speed | How many camera frames are checked per second. 15+ is good. Under 10 can miss fast reps |
-| Camera view | **Slant ✓** is what we want. **Side ✗** or **Front ✗** means move the phone |
+| Person | Whether the tracker can see you, and how sure it is |
+| Speed | Camera frames checked per second. 15+ is great, under 8 can miss fast reps |
+| View | **Front ✓** or **Slant ✓** are fine. **Side ✗** means turn the phone to face your head |
 | Left / Right elbow | 180° = arm straight, 90° = bent at a right angle |
-| Hand gap | Gap between your wrists compared with your shoulders. 1.0× = shoulder width, 2.0× = twice as wide |
-| Hip line | 0 = body straight. **Plus** = hips sagging. **Minus** = hips pushed up high |
-| Body tilt | 0° = flat. **Plus** = head higher than feet (incline). **Minus** = feet higher (decline) |
-| Body line uses | Whether your ankles are visible (best) or the app is falling back to your knees |
-| Tracker | Which model is used and whether it's running on the graphics chip (GPU, faster) or main processor (CPU) |
+| Working arm | Which arm the counter is following: both, or one (archer, one-arm) |
+| Shoulder drop | How far your shoulders have come down toward your hands. 0% = top, 60%+ = deep enough |
+| Hand gap | Gap between your wrists compared with your shoulders. About 1.4× was regular in testing |
+| Hip line | 0 = body straight, plus = sagging, minus = hips high. Shows "(off)" from the front |
+| Body tilt | 0° = flat, plus = head higher than feet |
+| State | Waiting for straight arms, at the top, or in a rep |
+| Last rep | Type, whether it counted, lowest elbow angle, deepest shoulder drop and hand gap |
 
 On the camera picture:
 - **Blue dots** = your left side, **orange dots** = your right side.
-- **Yellow dashed line** = straight line from shoulders to feet. Your hips should sit on it.
+- **Red dashed line** = the shoulder depth line. Get your shoulders down to it.
 - **Green dashed line** = the gap between your wrists.
-
-## Build plan
-
-1. ✅ Camera, skeleton and debug mode
-2. ⬜ Rep counting (only counts when elbows reach about 90° and arms straighten again)
-3. ⬜ Form warnings (hips sagging, hips too high, not low enough). Bad reps don't count
-4. ⬜ Push-up type detection (regular, wide, diamond, archer left/right) plus a Knuckles switch
-5. ⬜ Sets and progression ladder with unlocks
-6. ⬜ Saved workout history
 
 ## Changing settings
 
-The numbers the app uses to make decisions are all at the top of `index.html`, in the section called **SETTINGS YOU CAN TUNE**. Each line has a note explaining it. If the app runs slowly on an older phone, change `model: "full"` to `model: "lite"`.
+The numbers the app uses to make decisions are at the top of `index.html`, in the section called **SETTINGS YOU CAN TUNE**. Each line has a note explaining it. If the app runs slowly on an older phone, change `model: "full"` to `model: "lite"`.
 
 ## Troubleshooting
 
 - **"Camera permission was blocked"**: tap the icon to the left of the web address (a lock or "aA"), allow the camera, then reload the page.
 - **"Couldn't load the body tracker"**: check your internet connection and reload.
-- **Skeleton jumps around or disappears**: add more light, wear fitted clothes, and avoid a busy background behind you.
-- **Speed is under 10 frames/sec**: switch to the `lite` model (see Changing settings).
+- **Reps aren't counting**: turn on Debug and watch the elbow numbers. Your arms must reach 160° or more at the top. At the bottom, either the elbows need to reach 100° or less, or the shoulder drop needs to reach 60%.
+- **Skeleton jumps around or disappears**: add more light, and make sure both hands and shoulders are on screen.
+
+## Planned for later
+
+- Locking other apps until you finish your push-ups (needs a real phone app; a website can't lock apps)
+- A paid subscription
+- iPhone and Android apps
