@@ -699,6 +699,7 @@ function measure(points, points3d, width, height) {
   const [footL, footR] = feetSeen ? [BODY.lAnkle, BODY.rAnkle] : [BODY.lKnee, BODY.rKnee];
 
   const shoulders2d = mid(flat(BODY.lShoulder), flat(BODY.rShoulder));
+  const hips2d = mid(flat(BODY.lHip), flat(BODY.rHip));
   const knees2d = mid(flat(BODY.lKnee), flat(BODY.rKnee));
   const shoulderGap = dist(flat(BODY.lShoulder), flat(BODY.rShoulder));
   const armLength = (s, e, w) => dist(flat(s), flat(e)) + dist(flat(e), flat(w));
@@ -725,6 +726,9 @@ function measure(points, points3d, width, height) {
     kneePos: (knees2d.y - shoulders2d.y) / ((floorHandY - shoulders2d.y) || 1),  // 0 = level with shoulders, 1 = level with hands
     kneeBend: (jointAngle(real(BODY.lHip), real(BODY.lKnee), real(BODY.lAnkle))
       + jointAngle(real(BODY.rHip), real(BODY.rKnee), real(BODY.rAnkle))) / 2,   // 180 = legs straight
+    // Being tested as knee push-up clues (shown in measurements, not used for decisions yet):
+    shoulderWidth: shoulderGap,   // pixels; shoulders look wider as they come toward the phone
+    hipPos: (hips2d.y - shoulders2d.y) / ((floorHandY - shoulders2d.y) || 1),  // like kneePos, for the hips
     hipLine: hipOffset(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(BODY.lHip), real(BODY.rHip)), mid(real(footL), real(footR))),
     tilt: bodyTilt(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(footL), real(footR))),
     bodyAngle: toDegrees(Math.atan2(Math.abs(knees2d.y - shoulders2d.y), Math.abs(knees2d.x - shoulders2d.x))),
@@ -738,7 +742,7 @@ function measure(points, points3d, width, height) {
 
 // Numbers jump around a little from frame to frame; this steadies them.
 // It's based on time, so slow and fast phones behave the same.
-const SMOOTHED = ["elbowL", "elbowR", "handGap", "shoulderHeight", "kneePos", "kneeBend", "hipLine", "tilt", "bodyAngle", "shoulderToArm"];
+const SMOOTHED = ["elbowL", "elbowR", "handGap", "shoulderHeight", "kneePos", "kneeBend", "shoulderWidth", "hipPos", "hipLine", "tilt", "bodyAngle", "shoulderToArm"];
 function smoothMeasurements(previous, m, msSinceLast) {
   if (!previous || SETTINGS.smoothingMs <= 0) return { ...m };
   const keep = Math.exp(-msSinceLast / SETTINGS.smoothingMs);
@@ -768,7 +772,10 @@ function newRepCounter() {
 }
 
 function startTop(m) {
-  return { height: m.shoulderHeight, gaps: [m.handGap], kneePos: [m.kneePos], kneeBend: [m.kneeBend], view: cameraView(m) };
+  return {
+    height: m.shoulderHeight, gaps: [m.handGap], kneePos: [m.kneePos], kneeBend: [m.kneeBend],
+    widths: [m.shoulderWidth], hipPos: [m.hipPos], view: cameraView(m),
+  };
 }
 
 // Keep the last 30 readings taken with arms straight.
@@ -816,6 +823,8 @@ function stepReps(c, m, now, mode, countKnees = true) {
         remember(c.top.gaps, m.handGap);
         remember(c.top.kneePos, m.kneePos);
         remember(c.top.kneeBend, m.kneeBend);
+        remember(c.top.widths, m.shoulderWidth);
+        remember(c.top.hipPos, m.hipPos);
         c.top.view = c.view = cameraView(m);
       }
       return null;
@@ -823,7 +832,7 @@ function stepReps(c, m, now, mode, countKnees = true) {
     c.phase = "down";
     c.rep = {
       start: now, last: now, top: c.top,
-      lowestWorking: Infinity, lowestBoth: Infinity, lowestOne: Infinity, bottom: null, deepest: 0,
+      lowestWorking: Infinity, lowestBoth: Infinity, lowestOne: Infinity, bottom: null, deepest: 0, widest: 0,
       sagRun: 0, highRun: 0, sag: false, high: false,
     };
   }
@@ -842,6 +851,7 @@ function stepReps(c, m, now, mode, countKnees = true) {
   }
   const dropNow = r.top.height > 0 ? 1 - m.shoulderHeight / r.top.height : 0;
   r.deepest = Math.max(r.deepest, dropNow);
+  r.widest = Math.max(r.widest, m.shoulderWidth);
   // Only a rep that has turned around (started coming back up) can finish.
   // This matters for tucked elbows, which can look straight from the front.
   const comingUp = arm.angle >= r.lowestWorking + 15 || dropNow <= r.deepest - 0.1;
@@ -872,6 +882,9 @@ const BAD_REASONS = {
   knees: { short: "Knee push-up", long: "Not counted: knee push-up. Turn this on in Settings to count them", plural: "knee push-ups" },
 };
 
+// Two decimals for the rep log; a missing reading must never stop the counting
+const rounded = (n) => (Number.isFinite(n) ? +n.toFixed(2) : null);
+
 function judgeRep(r, mode, seconds, countKnees) {
   const { type, side } = classifyRep(r, mode);
   const oneSided = type === "archer" || type === "oneArm";
@@ -890,6 +903,7 @@ function judgeRep(r, mode, seconds, countKnees) {
     lowestElbow: Math.round(lowest), drop: Math.round(r.deepest * 100),
     handGap: +median(r.top.gaps).toFixed(2), view: r.top.view,
     kneePos: +median(r.top.kneePos).toFixed(2), kneeBend: Math.round(median(r.top.kneeBend)),
+    swing: rounded(r.widest / (median(r.top.widths) || 1)), hipPos: rounded(median(r.top.hipPos)),
   };
 }
 
@@ -1409,7 +1423,7 @@ const PHASE_NAMES = { waiting: "Waiting (straighten arms)", top: "At the top", d
 
 function describeRep(r) {
   const result = r.counted ? "✓" : `✗ ${BAD_REASONS[r.reason].plural}`;
-  return `${keyName(r.key)} ${result}, elbow ${r.lowestElbow}°, drop ${r.drop}%, gap ${r.handGap}, knees ${r.kneePos} / ${r.kneeBend}°`;
+  return `${keyName(r.key)} ${result}, elbow ${r.lowestElbow}°, drop ${r.drop}%, gap ${r.handGap}, knees ${r.kneePos} / ${r.kneeBend}°, swing ${r.swing}×, hips ${r.hipPos}`;
 }
 
 function debugRows(m) {
@@ -1431,6 +1445,8 @@ function debugRows(m) {
       ["Hip line", hipChecksOn(view) ? signed(m.hipLine) : `${signed(m.hipLine)} (off)`],
       ["Body tilt", `${signed(m.tilt, 0)}°`],
       ["Knees", `${m.kneePos.toFixed(2)} down, ${Math.round(m.kneeBend)}° bend`],
+      ["Hips", `${m.hipPos.toFixed(2)} down`],
+      ["Shoulder swing", counter.top ? `${(m.shoulderWidth / (median(counter.top.widths) || 1)).toFixed(2)}×` : "–"],
     );
   }
   rows.push(
