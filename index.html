@@ -609,9 +609,11 @@ const SETTINGS = {
   archerStraightArm: 150,   // ...one arm staying straighter than this...
   archerDifference: 45,     // ...while the other arm bends at least this much more
 
-  // Knee push-ups (first guesses, measured with arms straight; see "Knees" in debug mode)
-  kneesLowAbove: 0.9,       // knees this far down the screen = resting on the floor (0 = level with shoulders, 1 = level with hands)
-  kneeBendBelow: 120,       // ...or knees bent more than this (degrees) = kneeling with feet up
+  // Knee push-ups (measured with arms straight; see "Hips" and "Knees" in the measurements)
+  hipsLowAbove: 0.69,       // phone in front: hips this far down the screen = on your knees
+                            // (0 = level with shoulders, 1 = level with hands; regular measured 0.50-0.66, knee 0.71-0.76)
+  kneesLowAbove: 0.9,       // backup: knees this far down the screen = resting on the floor
+  kneeBendBelow: 120,       // backup: knees bent more than this (degrees) = kneeling with feet up
 
   // Position and camera
   pushupTiltMin: -35,       // body tilt range (degrees) that counts as "in push-up position"
@@ -726,9 +728,8 @@ function measure(points, points3d, width, height) {
     kneePos: (knees2d.y - shoulders2d.y) / ((floorHandY - shoulders2d.y) || 1),  // 0 = level with shoulders, 1 = level with hands
     kneeBend: (jointAngle(real(BODY.lHip), real(BODY.lKnee), real(BODY.lAnkle))
       + jointAngle(real(BODY.rHip), real(BODY.rKnee), real(BODY.rAnkle))) / 2,   // 180 = legs straight
-    // Being tested as knee push-up clues (shown in measurements, not used for decisions yet):
-    shoulderWidth: shoulderGap,   // pixels; shoulders look wider as they come toward the phone
     hipPos: (hips2d.y - shoulders2d.y) / ((floorHandY - shoulders2d.y) || 1),  // like kneePos, for the hips
+    shoulderWidth: shoulderGap,   // pixels; shown as "shoulder swing" in the measurements (not used for decisions)
     hipLine: hipOffset(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(BODY.lHip), real(BODY.rHip)), mid(real(footL), real(footR))),
     tilt: bodyTilt(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(footL), real(footR))),
     bodyAngle: toDegrees(Math.atan2(Math.abs(knees2d.y - shoulders2d.y), Math.abs(knees2d.x - shoulders2d.x))),
@@ -915,9 +916,11 @@ const TYPE_NAMES = {
   archer: "Archer", pseudoPlanche: "Pseudo-planche", oneArm: "One-arm", knee: "Knee",
 };
 
-// On your knees: knees low on screen (resting on the floor), or knees clearly bent (feet up).
+// On your knees: with the phone in front, your hips sit lower on screen (the best clue).
+// Backups: knees low on screen (resting on the floor), or knees clearly bent (feet up).
 function onKnees(r) {
-  return median(r.top.kneePos) >= SETTINGS.kneesLowAbove || median(r.top.kneeBend) <= SETTINGS.kneeBendBelow;
+  return (r.top.view === "front" && median(r.top.hipPos) >= SETTINGS.hipsLowAbove)
+    || median(r.top.kneePos) >= SETTINGS.kneesLowAbove || median(r.top.kneeBend) <= SETTINGS.kneeBendBelow;
 }
 
 // "archer-left" → "Archer (L)"

@@ -83,7 +83,7 @@ Your starting level comes from the level test (or level 1 if you skip it). You c
 - **Wide**: hands much wider than your shoulders.
 - **Diamond**: hands close together under your chest.
 - **Archer**: one arm bends while the other stays straight out to the side. Left and right are counted separately.
-- **Knee**: on your knees instead of your toes. Spotted when your knees sit very low on screen (resting on the floor) or are clearly bent (feet up). Knee push-ups never count toward the ladder. Whether they count at all is up to you (see Settings).
+- **Knee**: on your knees instead of your toes. With the phone in front of you, the main clue is your hips: on your knees they sit lower on screen at the top of the rep (0.69 or more of the way from your shoulders to your hands). Backups: knees very low on screen, or clearly bent (feet up). Knee push-ups never count toward the ladder. Whether they count at all is up to you (see Settings).
 
 **Picked by you** in the Exercise menu, because the camera can't judge them from the front:
 - **Incline** and **Decline**: the front camera can't tell how high your hands or feet are.
@@ -102,7 +102,7 @@ Tap the settings icon (the sliders) at the top:
 
 ## Honest limits
 
-- **Knee push-up detection depends on where the phone is.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. With the phone in its usual spot, 3 regular and 3 knee push-ups were all labelled correctly. In earlier tests with the phone placed a little differently, regular and knee push-ups weren't told apart. Keep the phone in the same spot each time. If a rep gets the wrong label, use Copy numbers (see Measurements) so the cut-offs can be adjusted.
+- **Knee push-up detection is based on a small test.** From the front, your knees are mostly hidden, so their position changed from day to day and couldn't be relied on. The hip position works better: regular push-ups measured 0.50–0.66 (two different people) and knee push-ups 0.71–0.76, so the cut-off is 0.69. That's only 3 knee push-ups of evidence, so if a rep gets the wrong label, use Copy numbers (see Measurements) and send it.
 
 - **Hip sagging and hips too high are not checked from the front.** From the front, your hips are hidden behind your shoulders and the tracker can only guess where they are. Workaround: if you want hip checks, put the phone at a **slant** (halfway between facing your head and facing your side, about 2 m away, whole body in view). The app notices the slanted camera and turns hip checks on automatically.
 - **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Measurements).
@@ -123,7 +123,9 @@ Turn on **Show measurements** in Settings to see live numbers on the camera. Tap
 | Hand gap | Gap between your wrists compared with your shoulders. About 1.4× was regular in testing |
 | Hip line | 0 = body straight, plus = sagging, minus = hips high. Shows "(off)" from the front |
 | Body tilt | 0° = flat, plus = head higher than feet |
-| Knees | How far down the screen your knees are (0 = level with your shoulders, 1 = level with your hands) and how bent they are (180° = straight). Knees 0.9 or lower, or bent to 120° or less, means a knee push-up |
+| Knees | How far down the screen your knees are (0 = level with your shoulders, 1 = level with your hands) and how bent they are (180° = straight). Backup knee push-up clues: 0.9 or lower, or bent to 120° or less |
+| Hips | How far down the screen your hips are, on the same scale. With the phone in front, 0.69 or more at the top means a knee push-up |
+| Shoulder swing | How much wider your shoulders look now than at the top. Shown for testing only |
 | State | Waiting for straight arms, at the top, or in a rep |
 | Last rep | Type, whether it counted, lowest elbow angle, deepest shoulder drop and hand gap |
 
