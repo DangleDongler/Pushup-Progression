@@ -57,6 +57,7 @@ Everyone starts at level 1. If you can already do the earlier levels, open **Lad
 - **Wide**: hands much wider than your shoulders.
 - **Diamond**: hands close together under your chest.
 - **Archer**: one arm bends while the other stays straight out to the side. Left and right are counted separately.
+- **Knee**: on your knees instead of your toes. Spotted when your knees sit very low on screen (resting on the floor) or are clearly bent (feet up). Knee push-ups never count toward the ladder. Whether they count at all is up to you (see Settings).
 
 **Picked by you** in the Exercise menu, because the camera can't judge them from the front:
 - **Incline** and **Decline**: the front camera can't tell how high your hands or feet are.
@@ -65,7 +66,14 @@ Everyone starts at level 1. If you can already do the earlier levels, open **Lad
 
 When your ladder level needs one of these, the Exercise menu switches to it automatically.
 
+## Settings
+
+Tap **Settings** (the gear icon on a phone):
+- **Count knee push-ups**: on (the default) means knee push-ups count and show as "Knee". Off means they show "Not counted: knee push-up".
+
 ## Honest limits
+
+- **Knee push-up detection is a first guess.** From the front, your knees are mostly hidden behind your body, so the tracker partly guesses where they are. In testing, regular push-ups showed knees about 0.75 down the screen and about 160° straight. Knee push-ups are expected to be lower on screen or more bent, but they haven't been tested yet. The cut-offs are set cautiously so regular push-ups aren't wrongly rejected, which means some knee push-ups may still slip through.
 
 - **Hip sagging and hips too high are not checked from the front.** From the front, your hips are hidden behind your shoulders and the tracker can only guess where they are. Workaround: if you want hip checks, put the phone at a **slant** (halfway between facing your head and facing your side, about 2 m away, whole body in view). The app notices the slanted camera and turns hip checks on automatically.
 - **The "wide", "diamond" and "archer" cut-off numbers are first guesses.** They were set from one test video of regular push-ups. They may need adjusting for your body and camera position (see Debug mode).
@@ -86,6 +94,7 @@ Tap **Debug** (the bug icon on a phone) to show or hide live numbers. Tap **Copy
 | Hand gap | Gap between your wrists compared with your shoulders. About 1.4× was regular in testing |
 | Hip line | 0 = body straight, plus = sagging, minus = hips high. Shows "(off)" from the front |
 | Body tilt | 0° = flat, plus = head higher than feet |
+| Knees | How far down the screen your knees are (0 = level with your shoulders, 1 = level with your hands) and how bent they are (180° = straight). Knees 0.9 or lower, or bent to 120° or less, means a knee push-up |
 | State | Waiting for straight arms, at the top, or in a rep |
 | Last rep | Type, whether it counted, lowest elbow angle, deepest shoulder drop and hand gap |
 

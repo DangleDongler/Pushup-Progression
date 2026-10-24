@@ -140,6 +140,12 @@
   .step.locked { opacity: 0.6; }
   .step button { margin-top: 6px; min-height: 34px; padding: 4px 12px; font-size: 14px; }
   .workoutHead { display: flex; justify-content: space-between; gap: 8px; }
+  .setting {
+    display: flex; gap: 12px; align-items: flex-start;
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--raised);
+    line-height: 1.4; cursor: pointer;
+  }
+  .setting input { width: 22px; height: 22px; margin: 2px 0 0; flex: none; accent-color: var(--good); }
   .workout ol { margin: 6px 0 0; padding-left: 22px; line-height: 1.5; }
 
   footer {
@@ -169,6 +175,7 @@
   <h1>Push-up Coach</h1>
   <button id="ladderBtn" aria-label="Ladder"><span class="icon">🪜</span><span class="label">Ladder</span></button>
   <button id="historyBtn" aria-label="History"><span class="icon">📋</span><span class="label">History</span></button>
+  <button id="settingsBtn" aria-label="Settings"><span class="icon">⚙️</span><span class="label">Settings</span></button>
   <button id="voiceBtn" aria-label="Voice"><span class="icon">🔊</span><span class="label">Voice</span></button>
   <button id="debugBtn" aria-label="Debug"><span class="icon">🐞</span><span class="label">Debug</span></button>
   <button id="flipBtn" aria-label="Flip camera" hidden><span class="icon">🔄</span><span class="label">Flip</span></button>
@@ -195,6 +202,7 @@
       <p><b>Hand gap</b>: distance between your wrists compared with your shoulders. 1.0× = same as your shoulders, 2.0× = twice as wide.</p>
       <p><b>Hip line</b>: 0 = body straight. Plus = hips sagging. Minus = hips pushed up high. Only used when the camera is at a slant or side.</p>
       <p><b>Body tilt</b>: 0° = flat. Plus = head higher than feet.</p>
+      <p><b>Knees</b>: how far down the screen your knees are (0 = level with your shoulders, 1 = level with your hands), and how bent they are (180° = legs straight). Low or bent knees = knee push-up.</p>
       <p><span class="dotL">Blue dots</span> = your left side, <span class="dotR">orange dots</span> = your right side.</p>
     </details>
   </div>
@@ -231,6 +239,18 @@
     <p id="storageWarning" class="bad" hidden>This browser isn't letting the app save anything (private browsing?). Your history will be lost when you close the page.</p>
     <div id="historyList"></div>
     <button id="clearHistoryBtn" class="danger">Delete all history</button>
+  </section>
+
+  <section id="settingsSheet" class="sheet" hidden>
+    <div class="sheetHead"><h2>Settings</h2><button data-close>Close</button></div>
+    <label class="setting">
+      <input type="checkbox" id="countKneesBox">
+      <span>
+        <b>Count knee push-ups</b><br>
+        <span class="muted">On: knee push-ups count and show as "Knee" (they don't count toward the ladder). Off: they show "Not counted: knee push-up".</span>
+      </span>
+    </label>
+    <p class="muted">Knee push-up detection is still being tuned. If it gets one wrong, turn on Debug, do a few reps, tap Copy numbers and send the result.</p>
   </section>
 </main>
 
@@ -281,6 +301,10 @@ const SETTINGS = {
   archerGapAbove: 1.7,      // archer needs hands at least this wide...
   archerStraightArm: 150,   // ...one arm staying straighter than this...
   archerDifference: 45,     // ...while the other arm bends at least this much more
+
+  // Knee push-ups (first guesses, measured with arms straight; see "Knees" in debug mode)
+  kneesLowAbove: 0.9,       // knees this far down the screen = resting on the floor (0 = level with shoulders, 1 = level with hands)
+  kneeBendBelow: 120,       // ...or knees bent more than this (degrees) = kneeling with feet up
 
   // Position and camera
   pushupTiltMin: -35,       // body tilt range (degrees) that counts as "in push-up position"
@@ -391,6 +415,9 @@ function measure(points, points3d, width, height) {
     rightHandY: flat(BODY.rWrist).y,
     handGap: dist(flat(BODY.lWrist), flat(BODY.rWrist)) / (shoulderGap || 1),
     shoulderHeight: floorHandY - shoulders2d.y,   // pixels from shoulders down to hands; shrinks as you go down
+    kneePos: (knees2d.y - shoulders2d.y) / ((floorHandY - shoulders2d.y) || 1),  // 0 = level with shoulders, 1 = level with hands
+    kneeBend: (jointAngle(real(BODY.lHip), real(BODY.lKnee), real(BODY.lAnkle))
+      + jointAngle(real(BODY.rHip), real(BODY.rKnee), real(BODY.rAnkle))) / 2,   // 180 = legs straight
     hipLine: hipOffset(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(BODY.lHip), real(BODY.rHip)), mid(real(footL), real(footR))),
     tilt: bodyTilt(mid(real(BODY.lShoulder), real(BODY.rShoulder)), mid(real(footL), real(footR))),
     bodyAngle: toDegrees(Math.atan2(Math.abs(knees2d.y - shoulders2d.y), Math.abs(knees2d.x - shoulders2d.x))),
@@ -404,7 +431,7 @@ function measure(points, points3d, width, height) {
 
 // Numbers jump around a little from frame to frame; this steadies them.
 // It's based on time, so slow and fast phones behave the same.
-const SMOOTHED = ["elbowL", "elbowR", "handGap", "shoulderHeight", "hipLine", "tilt", "bodyAngle", "shoulderToArm"];
+const SMOOTHED = ["elbowL", "elbowR", "handGap", "shoulderHeight", "kneePos", "kneeBend", "hipLine", "tilt", "bodyAngle", "shoulderToArm"];
 function smoothMeasurements(previous, m, msSinceLast) {
   if (!previous || SETTINGS.smoothingMs <= 0) return { ...m };
   const keep = Math.exp(-msSinceLast / SETTINGS.smoothingMs);
@@ -434,7 +461,13 @@ function newRepCounter() {
 }
 
 function startTop(m) {
-  return { height: m.shoulderHeight, gaps: [m.handGap], view: cameraView(m) };
+  return { height: m.shoulderHeight, gaps: [m.handGap], kneePos: [m.kneePos], kneeBend: [m.kneeBend], view: cameraView(m) };
+}
+
+// Keep the last 30 readings taken with arms straight.
+function remember(list, value) {
+  list.push(value);
+  if (list.length > 30) list.shift();
 }
 
 const hipChecksOn = (view) => view === "slant" || view === "side";
@@ -453,7 +486,7 @@ function workingArm(m, mode) {
 }
 
 // Feed one frame of measurements. Returns something for the screen to show, or null.
-function stepReps(c, m, now, mode) {
+function stepReps(c, m, now, mode, countKnees = true) {
   if (!inPushupPosition(m)) {
     if (now - c.lastInPosition > 1000) { c.phase = "waiting"; c.rep = null; c.top = null; }
     return null;
@@ -473,8 +506,9 @@ function stepReps(c, m, now, mode) {
     if (arm.angle >= SETTINGS.startRep && dropped <= SETTINGS.startDrop) {
       if (straight) {
         c.top.height = Math.max(c.top.height, m.shoulderHeight);
-        c.top.gaps.push(m.handGap);
-        if (c.top.gaps.length > 30) c.top.gaps.shift();
+        remember(c.top.gaps, m.handGap);
+        remember(c.top.kneePos, m.kneePos);
+        remember(c.top.kneeBend, m.kneeBend);
         c.top.view = c.view = cameraView(m);
       }
       return null;
@@ -519,7 +553,7 @@ function stepReps(c, m, now, mode) {
     c.rep = null;
     const seconds = (now - r.start) / 1000;
     if (seconds < SETTINGS.minRepSeconds) return null;
-    return { type: "rep", rep: judgeRep(r, mode, seconds) };
+    return { type: "rep", rep: judgeRep(r, mode, seconds, countKnees) };
   }
   return event;
 }
@@ -528,19 +562,27 @@ const BAD_REASONS = {
   depth: { short: "Go lower", long: "Not counted: go lower (elbows to about 90°)", plural: "too shallow" },
   sag: { short: "Hips sagging", long: "Not counted: hips sagging. Squeeze your stomach and glutes", plural: "hips sagging" },
   high: { short: "Hips too high", long: "Not counted: hips too high. Keep your body in a straight line", plural: "hips too high" },
+  knees: { short: "Knee push-up", long: "Not counted: knee push-up. Turn this on in Settings to count them", plural: "knee push-ups" },
 };
 
-function judgeRep(r, mode, seconds) {
+function judgeRep(r, mode, seconds, countKnees) {
   const { type, side } = classifyRep(r, mode);
   const oneSided = type === "archer" || type === "oneArm";
+  const kneeling = type === "knee";
   const lowest = oneSided ? r.lowestOne : r.lowestBoth;
   const deepEnough = lowest <= SETTINGS.bottomAngle || r.deepest >= SETTINGS.bottomDrop;
-  const reason = !deepEnough ? "depth" : r.sag ? "sag" : r.high ? "high" : null;
+  // The hip check assumes a straight line to your feet, so it doesn't apply on your knees.
+  const reason = !deepEnough ? "depth"
+    : kneeling && !countKnees ? "knees"
+    : !kneeling && r.sag ? "sag"
+    : !kneeling && r.high ? "high"
+    : null;
   return {
     type, side, key: side ? `${type}-${side}` : type,
     counted: !reason, reason, seconds: +seconds.toFixed(2),
     lowestElbow: Math.round(lowest), drop: Math.round(r.deepest * 100),
     handGap: +median(r.top.gaps).toFixed(2), view: r.top.view,
+    kneePos: +median(r.top.kneePos).toFixed(2), kneeBend: Math.round(median(r.top.kneeBend)),
   };
 }
 
@@ -549,8 +591,13 @@ function judgeRep(r, mode, seconds) {
 // ================================================================
 const TYPE_NAMES = {
   incline: "Incline", regular: "Regular", wide: "Wide", diamond: "Diamond", decline: "Decline",
-  archer: "Archer", pseudoPlanche: "Pseudo-planche", oneArm: "One-arm",
+  archer: "Archer", pseudoPlanche: "Pseudo-planche", oneArm: "One-arm", knee: "Knee",
 };
+
+// On your knees: knees low on screen (resting on the floor), or knees clearly bent (feet up).
+function onKnees(r) {
+  return median(r.top.kneePos) >= SETTINGS.kneesLowAbove || median(r.top.kneeBend) <= SETTINGS.kneeBendBelow;
+}
 
 // "archer-left" → "Archer (L)"
 function keyName(key) {
@@ -562,6 +609,7 @@ function classifyRep(r, mode) {
   // Types the camera can't judge are picked by you in the Exercise menu.
   if (mode === "incline" || mode === "decline" || mode === "pseudoPlanche") return { type: mode, side: null };
   if (mode === "oneArm") return { type: "oneArm", side: r.bottom?.side === "right" ? "right" : "left" };
+  if (onKnees(r)) return { type: "knee", side: null };
 
   const gap = median(r.top.gaps);
   const b = r.bottom;
@@ -653,7 +701,14 @@ let level = loadData("level", 0);
 let debugOn = loadData("debug", true);
 let voiceOn = loadData("voice", true);
 let knuckles = loadData("knuckles", false);
+let countKnees = loadData("countKnees", true);
 let mode = "auto";
+
+$("countKneesBox").checked = countKnees;
+$("countKneesBox").onchange = (e) => {
+  countKnees = e.target.checked;
+  saveData("countKnees", countKnees);
+};
 
 function showDebug(on) {
   debugOn = on;
@@ -931,7 +986,7 @@ const PHASE_NAMES = { waiting: "Waiting (straighten arms)", top: "At the top", d
 
 function describeRep(r) {
   const result = r.counted ? "✓" : `✗ ${BAD_REASONS[r.reason].plural}`;
-  return `${keyName(r.key)} ${result}, elbow ${r.lowestElbow}°, drop ${r.drop}%, gap ${r.handGap}`;
+  return `${keyName(r.key)} ${result}, elbow ${r.lowestElbow}°, drop ${r.drop}%, gap ${r.handGap}, knees ${r.kneePos} / ${r.kneeBend}°`;
 }
 
 function debugRows(m) {
@@ -952,6 +1007,7 @@ function debugRows(m) {
       ["Hand gap", `${m.handGap.toFixed(2)}×`],
       ["Hip line", hipChecksOn(view) ? signed(m.hipLine) : `${signed(m.hipLine)} (off)`],
       ["Body tilt", `${signed(m.tilt, 0)}°`],
+      ["Knees", `${m.kneePos.toFixed(2)} down, ${Math.round(m.kneeBend)}° bend`],
     );
   }
   rows.push(
@@ -971,7 +1027,7 @@ function updateDebugPanel(m, now) {
 $("copyBtn").onclick = async () => {
   const lines = debugRows(latest).map(([k, v]) => `${k}: ${v}`);
   lines.push("", "Recent reps:", ...repLog.map(describeRep));
-  lines.push("", `Exercise: ${mode}, knuckles: ${knuckles}, level: ${level + 1}`);
+  lines.push("", `Exercise: ${mode}, knuckles: ${knuckles}, count knee push-ups: ${countKnees}, level: ${level + 1}`);
   lines.push(`Screen: ${canvas.width}x${canvas.height}, camera: ${facing}`, `Browser: ${navigator.userAgent}`);
   const text = lines.join("\n");
   try {
@@ -1198,6 +1254,7 @@ function openSheet(id, render) {
 }
 $("ladderBtn").onclick = () => openSheet("ladderSheet", renderLadder);
 $("historyBtn").onclick = () => openSheet("historySheet", renderHistory);
+$("settingsBtn").onclick = () => openSheet("settingsSheet", () => {});
 document.querySelectorAll("[data-close]").forEach((b) => {
   b.onclick = () => { b.closest(".sheet").hidden = true; };
 });
@@ -1247,7 +1304,7 @@ function frame() {
   latest = steady;
 
   if (tracker) {
-    const event = stepReps(counter, steady, now, mode);
+    const event = stepReps(counter, steady, now, mode, countKnees);
     if (event) handleEvent(event, now);
     if (set && counter.phase !== "down") {
       const away = now - counter.lastInPosition > SETTINGS.autoEndSetSeconds * 1000;
